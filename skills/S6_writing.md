@@ -140,8 +140,16 @@ paper/
 ```
 
 2. Write `paper/main.tex` with appropriate document class:
-   - Use venue-specific template if `config.yaml.target_venue` specifies one
-   - Default to `article` class if no venue specified
+
+   **Template Selection** (based on config.yaml target_venue):
+   - If target_venue contains "NeurIPS": use `templates/latex/neurips2025.tex` as base
+   - If target_venue contains "ICML": use `templates/latex/icml2025.tex` as base
+   - If target_venue contains "ICLR": use `templates/latex/iclr2026.tex` as base
+   - Otherwise: use standard `article` class
+
+   Copy the selected template to `paper/main.tex` and adapt it (replace placeholder sections with \input{sections/...}).
+   Include `templates/latex/math_commands.tex` via \input if it exists.
+
    - Include all standard packages: amsmath, graphicx, booktabs, hyperref, natbib/biblatex
 
 3. Compile:
