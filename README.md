@@ -2,6 +2,8 @@
 
 Fully automated research pipeline driven by Claude Code. From a research direction to a peer-review-quality paper, code repository, and experimental results — without human intervention after kickoff.
 
+**v2.1**: MCP integration (Semantic Scholar, System Monitor, SSH), hardware-aware experiments, 5-step citation verification, venue-specific submission checklists, Git pre-registration protocol.
+
 ## How It Works
 
 ```
@@ -34,13 +36,19 @@ git clone https://github.com/your-org/InfiEpisteme.git
 cd InfiEpisteme
 pip install pyyaml requests
 
-# 2. Edit config.yaml
+# 2. (Optional) Install MCP servers for enhanced capabilities
+claude mcp add semantic-scholar -- npx -y @anthropic/mcp-semantic-scholar
+claude mcp add system-monitor -- npx -y @huhabla/mcp-system-monitor
+claude mcp add ssh -- npx -y @anthropic/mcp-ssh-server  # only if using remote GPU
+
+# 3. Edit config.yaml
 #    - Set research_direction
 #    - Set compute budget (GPU hours, type)
 #    - Set cross_review API key (optional, for adversarial review)
+#    - Configure MCP settings (mcp section)
 
-# 3. Run
-./run.sh start      # Interactive Phase 0, then fully unattended
+# 4. Run
+./run.sh start      # Hardware detect → Interactive Phase 0 → fully unattended
 ./run.sh status     # Check progress anytime
 ./run.sh resume     # Resume after interruption
 ./run.sh reset S4   # Reset a stage and retry
@@ -53,8 +61,11 @@ pip install pyyaml requests
 ```
 run.sh (bash loop)
   |
-  +--> claude -p "skills/_common.md + skills/S{N}.md"   # Execute stage
+  +--> claude -p "skills/S0_hardware.md"                  # Hardware detection (once)
+  +--> claude -p "skills/_common.md + skills/S{N}.md"     # Execute stage (MCP-first)
   +--> scripts/state_guard.py verify                      # Validate state
+  +--> claude -p "skills/memory_sync.md"                  # Consolidate knowledge
+  +--> scripts/state_guard.py verify                      # Validate memory
   +--> claude -p "skills/judge.md"                        # Quality gate
   +--> scripts/state_guard.py advance                     # Progress pipeline
 ```
@@ -73,23 +84,28 @@ InfiEpisteme/
 |-- registry.yaml            # Pipeline state (managed by scripts)
 |-- experiment_tree.json     # Experiment search tree
 |
-|-- skills/                  # The program (16 .md skill files)
-|   |-- _common.md           # Shared preamble for all skills
+|-- skills/                  # The program (18 .md skill files + references)
+|   |-- _common.md           # Shared preamble (MCP fallback, hardware, anti-hallucination)
+|   |-- S0_hardware.md       # Hardware detection → hardware_profile.json
 |   |-- P0_clarification.md  # Phase 0: research direction interview
-|   |-- P0_novelty.md        # Phase 0: Semantic Scholar novelty check
+|   |-- P0_novelty.md        # Phase 0: novelty check (Semantic Scholar MCP)
 |   |-- S0_init.md           # Bootstrap .ai/ knowledge base
-|   |-- S1_literature.md     # Multi-source literature survey
-|   |-- S2_ideation.md       # 6-perspective hypothesis debate
-|   |-- S3_implementation.md # Code baselines + proposed methods
-|   |-- S4_experiments.md    # Progressive tree search orchestration
-|   |-- S4_run_node.md       # Single GPU experiment execution
+|   |-- S1_literature.md     # Multi-source literature survey (MCP-first)
+|   |-- S2_ideation.md       # 6-perspective hypothesis debate (hardware-aware)
+|   |-- S3_implementation.md # Code baselines + proposed methods (hardware-aware)
+|   |-- S4_experiments.md    # Progressive tree search (SSH MCP, Git pre-registration)
+|   |-- S4_run_node.md       # Single experiment execution (SSH MCP, hardware-aware)
 |   |-- S5_analysis.md       # 6-perspective statistical analysis
-|   |-- S6_writing.md        # LaTeX paper (plan -> figures -> write -> compile)
+|   |-- S6_writing.md        # LaTeX paper (5-step citation verification)
 |   |-- S7_review.md         # Cross-model adversarial review
 |   |-- S7_revise.md         # Address reviewer feedback
-|   |-- S8_delivery.md       # Package final deliverables
+|   |-- S8_delivery.md       # Package deliverables + venue checklist
 |   |-- judge.md             # LLM-as-judge quality gate
-|   +-- vlm_review.md        # VLM figure quality review
+|   |-- memory_sync.md       # Memory Synthesizer (.ai/ consolidation)
+|   |-- vlm_review.md        # VLM figure quality review
+|   +-- references/          # Reference documents
+|       |-- citation-verification.md  # 5-step citation protocol
+|       +-- agent-continuity.md       # Cross-session continuity
 |
 |-- scripts/                 # Minimal Python CLI tools
 |   |-- state_guard.py       # State validation + repair after each skill
@@ -104,7 +120,14 @@ InfiEpisteme/
 |   |-- core/                # Research context, methodology, literature
 |   +-- evolution/           # Decisions, negative results, experiment log
 |
-|-- templates/               # Output document templates
+|-- templates/               # Output document + LaTeX templates
+|   |-- checklists/          # Venue-specific submission checklists
+|   |   |-- neurips.md       # NeurIPS checklist (16 items)
+|   |   |-- icml.md          # ICML reproducibility checklist
+|   |   |-- iclr.md          # ICLR checklist (LLM disclosure = desk reject)
+|   |   |-- acl.md           # ACL checklist (Limitations required)
+|   |   +-- generic.md       # Generic ML paper checklist
+|   +-- latex/               # LaTeX venue templates
 +-- state/                   # Runtime state files (JSON)
 ```
 
@@ -177,9 +200,60 @@ Stage 4.4: Ablation studies (remove each component)
   RESULTS_SUMMARY.md
 ```
 
+### MCP Integration (v2.1)
+
+Three core MCP servers replace Python scripts as the primary tool interface:
+
+| MCP Server | Purpose | Fallback |
+|------------|---------|----------|
+| **Semantic Scholar** | Paper search, details, citation retrieval | `scripts/scholarly_search.py` |
+| **System Monitor** | CPU/GPU/RAM/disk detection | `nvidia-smi`, `psutil` |
+| **SSH** | Remote GPU job submission and polling | `scripts/gpu_submit.py` |
+
+All MCP tools are optional — Python scripts serve as automatic fallbacks. Configure in `config.yaml` under the `mcp` section.
+
+### Hardware-Aware Experiments (v2.1)
+
+At pipeline start, `skills/S0_hardware.md` detects hardware and writes `hardware_profile.json`. All downstream skills adapt:
+
+- **S2 Ideation**: Only proposes feasible hypotheses for available hardware
+- **S3 Implementation**: Chooses DDP/FSDP vs single-GPU based on GPU count
+- **S4 Experiments**: Sets batch sizes and parallelism from VRAM and GPU count
+- No GPU? Skills flag for SSH remote execution or CPU-only alternatives.
+
+### Citation Verification (5-Step Protocol)
+
+Adapted from [Orchestra Research](https://github.com/orchestra-research/ai-research-skills):
+
+1. **Search** — Find paper via Semantic Scholar MCP
+2. **Verify** — Confirm in 2+ independent sources (Semantic Scholar + arXiv/CrossRef)
+3. **Retrieve** — Get BibTeX from authoritative source (never from LLM memory)
+4. **Validate** — Check paper content supports your citation claim
+5. **Add** — Use consistent key format: `author_year_firstword`
+
+### Git Pre-Registration
+
+Experiment designs are committed before execution, creating a lightweight pre-registration:
+
+```
+research(protocol): H1 — attention-based fusion     # committed before running
+research(results): H1_R1 — accuracy=0.847           # committed after results
+research(reflect): pivot to H2 — H1 ceiling reached # outer-loop decisions
+```
+
 ### Anti-Hallucination
 
-Every citation in the paper must be traceable to a real paper verified via Semantic Scholar or DBLP. The `_common.md` preamble enforces this as a non-negotiable rule across all skills.
+Every citation in the paper must pass the 5-step verification protocol. The `_common.md` preamble enforces this as a non-negotiable rule across all skills. See `skills/references/citation-verification.md`.
+
+### Venue-Specific Checklists (v2.1)
+
+Before delivery, S8 verifies the paper against venue-specific requirements:
+
+- **NeurIPS**: Broader Impacts, LLM disclosure, reproducibility (16 items)
+- **ICML**: Statistical reporting, reproducibility checklist
+- **ICLR**: LLM usage statement (missing = desk rejection)
+- **ACL**: Limitations section (required), bias/fairness
+- **Generic**: Standard ML paper quality checks
 
 ## Safety Mechanisms
 
@@ -191,6 +265,10 @@ Every citation in the paper must be traceable to a real paper verified via Seman
 | **Judge gate** | Every stage must pass LLM-as-judge before advancing |
 | **State persistence** | `registry.yaml` + git commits enable resume from any point |
 | **Idempotent skills** | Skills check existing outputs before redoing work |
+| **Hardware detection** | `hardware_profile.json` prevents experiments exceeding resources |
+| **Citation verification** | 5-step protocol eliminates ~40% LLM citation error rate |
+| **Git pre-registration** | Experiment design committed before execution |
+| **Venue checklists** | Venue-specific requirements checked before delivery |
 
 ## Configuration
 
@@ -205,6 +283,12 @@ compute:
   gpu_hours: 100
   gpu_type: "A100"
   parallel_jobs: 3
+
+mcp:
+  semantic_scholar: true       # Semantic Scholar MCP (fallback: scholarly_search.py)
+  system_monitor: true         # System Monitor MCP (fallback: nvidia-smi)
+  ssh_remote: false            # SSH MCP for remote GPU (fallback: gpu_submit.py)
+  ssh_host: ""                 # SSH target host
 
 cross_review:
   enabled: true
@@ -241,6 +325,7 @@ Design informed by:
 - [Sibyl Research System](https://github.com/Sibyl-Research-Team/sibyl-research-system) — multi-perspective debate, stateless-with-artifacts architecture, self-healing
 - [GPT-Researcher](https://github.com/assafelovic/gpt-researcher) — multi-source aggregation, recursive tree exploration
 - [AgentInfra](https://github.com/JayCheng113/AgentInfra) — .ai/ persistent knowledge layer convention
+- [Orchestra Research](https://github.com/orchestra-research/ai-research-skills) — 5-step citation verification, venue checklists, Git pre-registration protocol
 
 ## License
 

@@ -32,15 +32,42 @@ You are a Claude Code skill — a self-contained instruction set that reads inpu
 
 Exception: If you discover a critical failure during your work, you MAY append to `.ai/evolution/negative-results.md` immediately (don't wait for memory sync).
 
+## MCP Tool Policy
+
+When MCP tools are available, prefer them over Python scripts. If an MCP tool call fails (not installed, connection error, timeout), fall back to the corresponding Python script.
+
+| Task | MCP Tool (preferred) | Fallback |
+|------|---------------------|----------|
+| Paper search | `mcp__semantic-scholar__search_papers` | `python3 scripts/scholarly_search.py search` |
+| Paper details | `mcp__semantic-scholar__get_paper_details` | `python3 scripts/scholarly_search.py bibtex` |
+| Hardware info | `mcp__system-monitor__get_gpu_info` etc. | `nvidia-smi` / `python3 -c "import psutil; ..."` |
+| Remote execution | `mcp__ssh__execute_command` | `python3 scripts/gpu_submit.py` / `gpu_poll.py` |
+
+## Hardware-Aware Design
+
+If your skill involves **experiment design, code implementation, or resource estimation**, read `hardware_profile.json` before starting. Adapt your plan to hardware capabilities:
+
+- **No GPU** → CPU-only plan or flag for SSH remote execution
+- **Single GPU, VRAM < 16GB** → gradient accumulation, mixed precision, small batch, avoid large models; consider quantization (QLoRA)
+- **Single GPU, VRAM ≥ 16GB** → standard training; use mixed precision for efficiency
+- **Multi-GPU** → use DDP/FSDP; set `parallel_experiments` from hardware profile
+- **VRAM < model requirement** → consider model parallelism, offloading, or smaller model variants
+
+If `hardware_profile.json` does not exist, proceed without hardware constraints but note the limitation.
+
 ## Anti-Hallucination Rules
 
 These rules are **non-negotiable**:
 
-1. **Every citation must be real.** If you cite [Author, Year], that paper must exist. Verify via `python3 scripts/scholarly_search.py` or Semantic Scholar API.
+1. **Every citation must be real.** If you cite [Author, Year], that paper must exist. Verify via Semantic Scholar MCP (`mcp__semantic-scholar__search_papers`) or fallback `python3 scripts/scholarly_search.py`.
 2. **Never fabricate paper titles, authors, venues, or years.** If unsure, search first.
 3. **Never fabricate experimental numbers.** Every number in a table must come from an actual experiment run or a verified published paper.
 4. **Every \cite{} in LaTeX must match an entry in bibliography.bib.** No phantom citations.
 5. **If you cannot verify a claim, say so explicitly** rather than inventing a reference.
+6. **Citation key format must be consistent**: `author_year_firstword` (e.g., `vaswani_2017_attention`).
+7. **Never generate BibTeX from LLM memory.** BibTeX must come from Semantic Scholar MCP, DOI lookup, or an authoritative source.
+8. **Every citation must be confirmed in 2+ independent sources** (Semantic Scholar + arXiv or CrossRef).
+9. **Full citation verification protocol**: see `skills/references/citation-verification.md`.
 
 ## Output Rules
 
@@ -52,6 +79,9 @@ These rules are **non-negotiable**:
 ### Commit Format
 Stage work commits: `<stage>: <summary>` (e.g., `S1: complete literature survey with 25 papers`)
 Knowledge commits: `docs(.ai): <summary>`
+Experiment protocol commits: `research(protocol): {hypothesis} — {approach}` (must be committed BEFORE running the experiment)
+Experiment result commits: `research(results): {node_id} — {metric}={value}`
+Outer-loop reflection commits: `research(reflect): {direction} — {reason}`
 
 ### Idempotency
 - Before writing an output file, check if it already exists with valid content.

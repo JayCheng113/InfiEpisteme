@@ -110,17 +110,24 @@ Write in this order (not the order they appear in the paper):
 - Significance (1 sentence)
 - Target: 150-250 words
 
-### Phase 4: Anti-Hallucination Citation Verification
+### Phase 4: Anti-Hallucination Citation Verification (5-Step Protocol)
 
-Before compilation, verify EVERY citation:
+Before compilation, verify EVERY citation using the full 5-step protocol from `skills/references/citation-verification.md`:
 
-1. Extract all `\cite{key}` from all .tex files.
-2. For each key, verify it exists in `bibliography.bib`.
-3. For each bibliography entry, verify it refers to a real paper:
-   - Check via `python3 scripts/scholarly_search.py search "{title}"` or web search.
-   - Verify: title, authors, year, venue match.
-4. Remove or fix any phantom citations.
-5. Check for uncited bibliography entries (warn but do not remove — they may be used in appendix).
+1. **Search**: Extract all `\cite{key}` from .tex files. For each bibliography entry, search for the paper title using Semantic Scholar MCP (`mcp__semantic-scholar__search_papers`) or fallback (`python3 scripts/scholarly_search.py search "{title}"`).
+
+2. **Verify (2+ sources)**: Confirm each paper exists in at least 2 independent sources (Semantic Scholar + arXiv/CrossRef/DBLP). Check that title, first author, year, and venue match across sources. **If a paper cannot be confirmed in 2 sources: REMOVE the citation.**
+
+3. **Retrieve BibTeX**: Get BibTeX from Semantic Scholar MCP (`mcp__semantic-scholar__get_paper_details`) or DOI lookup. **Never generate BibTeX from LLM memory.** Replace any hand-written BibTeX with authoritative versions.
+
+4. **Validate context**: For each citation, verify the paper's actual content supports the claim you're making. Read at least the abstract to confirm relevance. Common errors: citing paper A for a result from paper B, citing surveys instead of original work.
+
+5. **Add with consistent keys**: Ensure all citation keys follow `author_year_firstword` format (e.g., `vaswani_2017_attention`). Fix any inconsistent keys.
+
+After verification:
+- Remove or fix any phantom citations (cited but not in .bib).
+- Check for uncited bibliography entries (warn but do not remove — they may be used in appendix).
+- Log the verification: "{N} citations verified, {M} removed as unverifiable."
 
 ### Phase 5: Compile
 

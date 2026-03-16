@@ -7,13 +7,14 @@
 ## Before You Start
 
 1. Read `registry.yaml` — confirm `current_stage: S4`. Note `tree_stages_complete`.
-2. Read `config.yaml` — get GPU budget, parallel_jobs, gpu_type.
-3. Read `experiment_tree.json` — current tree state and node statuses.
-4. Read `EXPERIMENT_PLAN.md` — evaluation protocol, primary metric.
-5. Read `.ai/core/methodology.md` — approach details.
-6. Read `.ai/evolution/negative-results.md` — avoid repeating failed approaches.
-7. Read `.ai/evolution/experiment-log.md` — prior runs.
-8. Check `state/JUDGE_RESULT.json` — if retrying:
+2. Read `config.yaml` — get GPU budget, parallel_jobs, gpu_type, MCP settings.
+3. Read `hardware_profile.json` — hardware capabilities. Use `recommendations.parallel_experiments` for max concurrent jobs. Adjust batch sizes per `recommendations.max_batch_size_estimate`.
+4. Read `experiment_tree.json` — current tree state and node statuses.
+5. Read `EXPERIMENT_PLAN.md` — evaluation protocol, primary metric.
+6. Read `.ai/core/methodology.md` — approach details.
+7. Read `.ai/evolution/negative-results.md` — avoid repeating failed approaches.
+8. Read `.ai/evolution/experiment-log.md` — prior runs.
+9. Check `state/JUDGE_RESULT.json` — if retrying:
    - Read `retry_guidance` to see which tree stage failed.
    - Resume from the failed tree stage, not from the beginning.
 
@@ -44,9 +45,23 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
 **Goal**: Run all root nodes, classify as buggy/non-buggy, select best per hypothesis.
 
 1. **Collect runnable root nodes** from experiment_tree.json (status=runnable).
-2. **For each root node**, execute the experiment:
+2. **Git Pre-Registration** (before ANY experiment execution):
+   ```bash
+   git add experiment_tree.json EXPERIMENT_PLAN.md
+   git commit -m "research(protocol): {hypothesis} — {approach_summary}"
+   ```
+   This proves the experimental design was committed before observing results.
+
+3. **For each root node**, execute the experiment:
+
+   **Via SSH MCP** (if `config.yaml` has `mcp.ssh_remote: true`):
+   - Use `mcp__ssh__execute_command` to submit: `nohup python3 src/method/train.py --config configs/{id}.yaml > results/{id}/logs/train.log 2>&1 &`
+   - Poll via `mcp__ssh__execute_command`: `cat results/{id}/metrics.json 2>/dev/null`
+
+   **Via Python scripts** (fallback):
    - Submit GPU job: `python3 scripts/gpu_submit.py --node {id} --script src/method/train.py --config configs/{id}.yaml`
    - Poll for completion: `python3 scripts/gpu_poll.py --node {id}`
+
    - If poll returns success: read `results/{node_id}/metrics.json`
    - If poll returns failure: mark node as `buggy`, log to negative-results.md
 3. **For each completed node**:
@@ -58,7 +73,12 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
    - `non-buggy`: plausible results, within expected range
 5. **Select best non-buggy node per hypothesis** based on primary metric.
 6. Update experiment_tree.json: set `winner: true` on selected nodes.
-7. Update registry.yaml: `tree_stages_complete: 1`.
+7. **Git Result Commit** (after each batch completes):
+   ```bash
+   git add results/ experiment_tree.json
+   git commit -m "research(results): stage_4.1 — best={best_node_id}, {metric}={value}"
+   ```
+8. Update registry.yaml: `tree_stages_complete: 1`.
 
 **Failure handling**: If ALL root nodes for a hypothesis are buggy:
 - Log to negative-results.md with details.

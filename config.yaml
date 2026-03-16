@@ -13,6 +13,12 @@ compute:
 resources:
   semantic_scholar_key: "" # optional, for higher API throughput
 
+mcp:
+  semantic_scholar: true  # use Semantic Scholar MCP (fallback: scripts/scholarly_search.py)
+  system_monitor: true    # use System Monitor MCP (fallback: nvidia-smi / psutil)
+  ssh_remote: false       # use SSH MCP for remote GPU (fallback: scripts/gpu_submit.py)
+  ssh_host: ""            # SSH target host (required if ssh_remote: true)
+
 notify:
   email: ""
   telegram: ""

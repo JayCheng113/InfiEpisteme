@@ -39,7 +39,12 @@ Formulate 4-6 search queries covering:
 
 For each query, search using:
 
-**Semantic Scholar** (primary):
+**Semantic Scholar** (primary — use MCP if available, fallback to script):
+
+MCP (preferred):
+- Use `mcp__semantic-scholar__search_papers` with the query. Request up to 20 results.
+
+Fallback:
 ```bash
 python3 scripts/scholarly_search.py search "<query>" --limit 20
 ```

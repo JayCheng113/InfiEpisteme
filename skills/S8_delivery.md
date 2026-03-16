@@ -156,7 +156,49 @@ Summary document at the project root:
 - Delivered: {date}
 ```
 
-### Step 7: Final PDF Check
+### Step 7: Venue Checklist Verification
+
+Before final delivery, verify the paper meets venue-specific requirements:
+
+1. Read `config.yaml` → `target_venue`.
+2. Load the corresponding checklist:
+   - If target_venue contains "NeurIPS": load `templates/checklists/neurips.md`
+   - If target_venue contains "ICML": load `templates/checklists/icml.md`
+   - If target_venue contains "ICLR": load `templates/checklists/iclr.md`
+   - If target_venue contains "ACL": load `templates/checklists/acl.md`
+   - Otherwise (including "arxiv" or empty): load `templates/checklists/generic.md`
+3. Go through each checklist item and verify the paper meets it.
+4. Write `DELIVERY/checklist_report.md`:
+
+```markdown
+# Venue Checklist Report
+
+**Target Venue**: {venue}
+**Checklist Used**: {checklist_file}
+**Date**: {date}
+
+## Results
+
+| # | Item | Status | Notes |
+|---|------|--------|-------|
+| 1 | {item description} | PASS/FAIL/N/A | {notes} |
+| ... | ... | ... | ... |
+
+## Summary
+- **Passed**: {N} / {total}
+- **Failed**: {M} (list critical failures)
+- **N/A**: {K}
+
+## Critical Failures Requiring Action
+{List any FAIL items that could result in desk rejection or major review concerns}
+```
+
+5. If any critical failures are found (desk-rejection risks):
+   - Fix what can be fixed (e.g., add missing LLM disclosure, add Limitations section).
+   - Recompile PDF if changes were made.
+   - Flag unfixable issues in the report.
+
+### Step 8: Final PDF Check
 
 One last verification of paper.pdf:
 1. Open and verify it renders (page count > 0).
@@ -175,6 +217,7 @@ One last verification of paper.pdf:
 | `DELIVERY/results/` | Key results and figures |
 | `DELIVERY/supplementary/` | Additional materials |
 | `DELIVERY.md` | Delivery summary |
+| `DELIVERY/checklist_report.md` | Venue checklist verification report |
 
 ## Quality Criteria (from PIPELINE.md)
 
@@ -182,6 +225,7 @@ One last verification of paper.pdf:
 - [ ] Code runs from DELIVERY/README.md instructions
 - [ ] Results in DELIVERY/results/ match numbers in paper
 - [ ] DELIVERY.md summary present
+- [ ] DELIVERY/checklist_report.md present with venue-specific checks
 
 ## Rules
 

@@ -15,9 +15,13 @@ InfiEpisteme is an automated research pipeline where **.md files are the program
 
 ```
 run.sh (bash loop)
+  ├── claude -p "skills/S0_hardware.md" → hardware detection (once at start)
   ├── scripts/parse_state.py → read registry.yaml
   ├── claude -p "skills/_common.md + skills/S{N}.md" → execute stage
+  │     └── MCP tools (preferred) → fallback to Python scripts
   ├── scripts/state_guard.py verify → validate + repair state
+  ├── claude -p "skills/memory_sync.md" → memory consolidation
+  ├── scripts/state_guard.py verify → validate memory quality
   ├── claude -p "skills/judge.md" → LLM-as-judge quality gate
   ├── scripts/state_guard.py advance → advance or retry
   └── loop until COMPLETE or failure
@@ -49,8 +53,22 @@ Bash loop: reads registry.yaml, dispatches skills, runs state guard and judge, a
 ### State Guardian (`scripts/state_guard.py`)
 Deterministic Python that validates + repairs state after each skill execution. Ensures pipeline integrity even when Claude Code misses state updates. ~150 lines.
 
+### MCP Integration (v2.1)
+Three core MCP servers provide tool access, with Python script fallbacks:
+
+| MCP Server | Purpose | Fallback |
+|------------|---------|----------|
+| `semantic-scholar` | Paper search, details, citations | `scripts/scholarly_search.py` |
+| `system-monitor` | CPU/GPU/RAM/disk detection | `nvidia-smi`, `psutil` |
+| `ssh` | Remote GPU job submission/polling | `scripts/gpu_submit.py`, `scripts/gpu_poll.py` |
+
+Install: `claude mcp add <name> -- npx -y <package>`
+
+### Hardware Detection (v2.1)
+`skills/S0_hardware.md` runs once at pipeline start, producing `hardware_profile.json`. All downstream skills adapt experiment plans, batch sizes, and parallelism to actual hardware capabilities.
+
 ### Python Scripts (`scripts/`)
-Minimal CLI tools called by skills via Bash:
+Minimal CLI tools, now serving as fallbacks when MCP is unavailable:
 - `gpu_submit.py` / `gpu_poll.py` — GPU job management (local + SLURM)
 - `cross_review.py` — external model review dispatch (GPT-4o/Gemini)
 - `scholarly_search.py` — Semantic Scholar API
@@ -68,6 +86,7 @@ Knowledge persists across stateless `claude -p` sessions via file-based memory:
 
 ### State Files
 - `registry.yaml` — pipeline position + per-stage status/attempts
+- `hardware_profile.json` — detected hardware capabilities (GPU, CPU, RAM, disk)
 - `experiment_tree.json` — experiment tree with node states
 - `state/JUDGE_RESULT.json` — latest judge evaluation
 - `state/MEMORY_SYNC_RESULT.json` — memory consolidation report
@@ -87,8 +106,23 @@ Knowledge persists across stateless `claude -p` sessions via file-based memory:
 9. **Memory Synthesizer** — dedicated skill consolidates .ai/ after each stage (executing skills don't update memory)
 10. **Context Chain** — `.ai/context_chain.md` captures reasoning thread across stateless sessions
 11. **Fully unattended after Phase 0** — sleep mode with circuit breaker for safety
+12. **MCP-first architecture** — prefer MCP tools over Python scripts; scripts remain as fallbacks
+13. **Hardware-aware experiments** — hardware_profile.json drives batch sizes, parallelism, framework choices
+14. **5-step citation verification** — search → verify in 2+ sources → retrieve BibTeX → validate context → consistent keys
+15. **Git pre-registration** — experiment design committed before execution (research(protocol): commits)
+16. **Venue-specific checklists** — S8 verifies paper against NeurIPS/ICML/ICLR/ACL requirements
 
 ## Changelog
+
+### 2026-03-16 — v2.1 MCP + hardware + research rigor
+- Added 3 core MCP servers (Semantic Scholar, System Monitor, SSH) with Python fallbacks
+- Added hardware detection (S0_hardware.md → hardware_profile.json)
+- All experiment-related skills now hardware-aware (batch size, parallelism, framework)
+- Added 5-step citation verification protocol (from Orchestra Research)
+- Added venue-specific submission checklists (NeurIPS, ICML, ICLR, ACL, generic)
+- Added Git pre-registration protocol for experiments
+- Enhanced commit format (research(protocol):, research(results):, research(reflect):)
+- Added reference documents (citation-verification.md, agent-continuity.md)
 
 ### 2026-03-16 — v2 rewrite
 - Replaced Python orchestrator with `run.sh` + .md skills

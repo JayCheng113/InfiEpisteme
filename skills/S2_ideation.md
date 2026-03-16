@@ -13,7 +13,8 @@
 6. Read `.ai/core/methodology.md` — current methodology notes.
 7. Read `.ai/core/literature.md` — key themes and gap.
 8. Read `.ai/evolution/decisions.md` — prior decisions.
-9. Check `state/JUDGE_RESULT.json` — if retrying, focus on failed criteria (e.g., "hypotheses lack feasibility scores", "experiment tree missing root nodes").
+9. Read `hardware_profile.json` — hardware capabilities. Your hypotheses must be feasible on the available hardware. If no GPU is available, do not propose GPU-intensive approaches without noting SSH remote execution requirement.
+10. Check `state/JUDGE_RESULT.json` — if retrying, focus on failed criteria (e.g., "hypotheses lack feasibility scores", "experiment tree missing root nodes").
 
 ### Idempotency Check
 - If `EXPERIMENT_PLAN.md` and `experiment_tree.json` (with populated nodes) already exist and no retry: verify completeness and skip.
@@ -30,7 +31,7 @@ From the literature gap identified in RELATED_WORK.md, generate **5 concrete hyp
 - **Testable**: can be verified or falsified by an experiment
 - **Specific**: names the method, dataset, and expected outcome
 - **Grounded**: motivated by a gap in the literature
-- **Feasible**: achievable within the compute budget in config.yaml
+- **Feasible**: achievable within the compute budget in config.yaml AND the hardware capabilities in hardware_profile.json
 
 Format for each:
 ```
@@ -52,9 +53,10 @@ Focus: novel combinations, creative leaps, unexplored connections.
 - Score each hypothesis on novelty (1-5).
 
 **Perspective 2: Pragmatist**
-Focus: engineering feasibility, implementation complexity, compute budget.
+Focus: engineering feasibility, implementation complexity, compute budget, hardware constraints.
 - Can this be implemented in the available time?
 - Does the compute budget support the required experiments?
+- Does the available hardware (from `hardware_profile.json`) support the model size and training requirements?
 - Are the required datasets available?
 - Score each hypothesis on feasibility (1-5).
 

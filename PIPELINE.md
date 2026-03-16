@@ -6,7 +6,14 @@
 
 ## Stage Order
 
-P0 → S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8 → COMPLETE
+[Hardware Detection] → P0 → S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8 → COMPLETE
+
+### Hardware Detection (Pre-Stage)
+**Skill**: `S0_hardware.md`
+**Trigger**: Runs automatically at pipeline start if `hardware_profile.json` does not exist.
+**Timeout**: 2m
+**Output**: `hardware_profile.json`
+**Not a formal stage** — no judge gate, no retry logic. Failure is non-fatal (skills proceed without hardware constraints).
 
 ## Stage Definitions
 
@@ -42,7 +49,7 @@ expected_ai_updates:
 registry_fields: {}
 ```
 
-**Judge criteria**: .ai/core/ files populated with content from RESEARCH_PROPOSAL.md
+**Judge criteria**: .ai/core/ files populated with content from RESEARCH_PROPOSAL.md; `hardware_profile.json` exists with valid hardware data
 
 ---
 
@@ -228,6 +235,7 @@ expected_outputs:
   - DELIVERY/results/
   - DELIVERY/README.md
   - DELIVERY.md
+  - DELIVERY/checklist_report.md
 expected_ai_updates: []
 registry_fields: {}
 ```
@@ -237,6 +245,7 @@ registry_fields: {}
 - Code runs from DELIVERY/README.md instructions
 - Results in DELIVERY/results/ match numbers in paper
 - DELIVERY.md summary present
+- DELIVERY/checklist_report.md exists with venue-specific verification
 
 ---
 
@@ -248,6 +257,7 @@ registry_fields: {}
 | Judge failure | JUDGE_RESULT.json | Re-invoke with retry_guidance |
 | GPU crash | gpu_poll.py exit code | Resume from checkpoint or re-submit |
 | API rate limit | scripts exit code | Exponential backoff in Python |
+| MCP unavailable | tool call error | Fallback to Python scripts (see _common.md) |
 | Cross-review fail | cross_review.py exit | Fall back to internal review |
 | LaTeX compile fail | pdflatex exit code | Skill fixes .tex and retries |
 | Context overflow | Claude Code error | State persisted; resume from registry |
@@ -263,5 +273,6 @@ If the same criterion fails 3 consecutive times across retries:
 
 - Max review cycles: 4 (prevents infinite review loops)
 - Max GPU hours per experiment: skip if >4h without explicit budget
-- Anti-hallucination: every citation must be verifiable via Semantic Scholar/DBLP
+- Anti-hallucination: every citation must be verifiable via Semantic Scholar/DBLP (5-step verification protocol)
 - Anti-gaming: reviewers must not hide weaknesses to inflate scores
+- Git pre-registration: experiment design committed before running (research(protocol): commits)

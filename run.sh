@@ -105,7 +105,29 @@ run_stage() {
     fi
 }
 
+run_hardware_detection() {
+    echo "[$(timestamp)] Detecting hardware capabilities..."
+    local hw_prompt=""
+    if [ -f skills/_common.md ]; then
+        hw_prompt="$(cat skills/_common.md)"$'\n\n'
+    fi
+    hw_prompt="$hw_prompt$(cat skills/S0_hardware.md)"
+    if ! claude -p "$hw_prompt" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/hardware_detect.log"; then
+        echo "[$(timestamp)] Hardware detection returned non-zero (non-fatal, continuing)"
+    fi
+    if [ -f "hardware_profile.json" ]; then
+        echo "[$(timestamp)] Hardware profile created successfully."
+    else
+        echo "[$(timestamp)] WARNING: hardware_profile.json not created. Skills will proceed without hardware constraints."
+    fi
+}
+
 pipeline_loop() {
+    # Hardware detection (runs once at pipeline start or when profile is missing)
+    if [ ! -f "hardware_profile.json" ] || [ "${1:-}" = "fresh" ]; then
+        run_hardware_detection
+    fi
+
     local stage
     stage=$(get_stage)
 
@@ -147,7 +169,7 @@ pipeline_loop() {
 case "${1:-help}" in
     start)
         python3 scripts/update_state.py reset_all
-        pipeline_loop
+        pipeline_loop fresh
         ;;
     resume)
         pipeline_loop
@@ -160,7 +182,7 @@ case "${1:-help}" in
         echo "Reset complete. Run ./run.sh resume to continue."
         ;;
     *)
-        echo "InfiEpisteme v2 — Automated Research Pipeline"
+        echo "InfiEpisteme v2.1 — Automated Research Pipeline"
         echo ""
         echo "Usage: ./run.sh {start|resume|status|reset <stage>}"
         echo ""

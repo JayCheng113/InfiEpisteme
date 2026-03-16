@@ -39,6 +39,7 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] `.ai/core/methodology.md` exists and has content
 - [ ] `.ai/evolution/decisions.md` contains ADR-001
 - [ ] All required directories exist (state/, results/, paper/sections/, etc.)
+- [ ] `hardware_profile.json` exists with valid JSON (GPU/CPU/memory detected)
 
 #### S1 — Literature Survey
 - [ ] `RELATED_WORK.md` exists
@@ -95,6 +96,7 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] `DELIVERY/code/` exists with src/ and requirements.txt
 - [ ] `DELIVERY/code/README.md` exists
 - [ ] `DELIVERY.md` exists
+- [ ] `DELIVERY/checklist_report.md` exists with venue-specific checks
 - [ ] Numbers in paper match numbers in results/
 
 ### Layer 2: Content Quality Assessment
@@ -102,7 +104,7 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 If all Layer 1 checks pass, perform qualitative evaluation. Adopt an **adversarial stance** — actively look for problems.
 
 **For S1 (Literature)**:
-- Are the cited papers real? Spot-check 3 random papers with `python3 scripts/scholarly_search.py`.
+- Are the cited papers real? Spot-check 3 random papers with Semantic Scholar MCP (`mcp__semantic-scholar__search_papers`) or fallback `python3 scripts/scholarly_search.py`. Verify each in 2+ independent sources per the citation verification protocol.
 - Is the gap statement actually a gap, or is it already addressed by cited work?
 - Are the baselines appropriate for this problem (not straw-men)?
 
@@ -128,7 +130,8 @@ If all Layer 1 checks pass, perform qualitative evaluation. Adopt an **adversari
 **For S6 (Paper)**:
 - Is the writing clear and claims backed by evidence?
 - Are figures informative and properly captioned?
-- NeurIPS-calibrated assessment: would this paper be competitive?
+- Venue-calibrated assessment: would this paper be competitive at the target venue?
+- Citation verification: spot-check 3 random `\cite{}` entries through the 5-step verification protocol (search, verify in 2+ sources, check BibTeX source, validate context, check key format). See `skills/references/citation-verification.md`.
 
 **For S7 (Review)**:
 - Were critical weaknesses genuinely addressed?

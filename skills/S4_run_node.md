@@ -6,10 +6,11 @@
 ## Before You Start
 
 1. Read `experiment_tree.json` — find the specific node to execute.
-2. Read `config.yaml` — GPU settings and budget.
-3. Read `.ai/evolution/negative-results.md` — check if this node or a similar one has failed before.
-4. Check `results/{node_id}/metrics.json` — if it already exists with valid results, skip execution.
-5. Verify the node has `status: "runnable"`. If `status: "buggy"`, attempt to fix first.
+2. Read `config.yaml` — GPU settings, budget, and MCP settings.
+3. Read `hardware_profile.json` — use `recommendations.max_batch_size_estimate` to set appropriate batch sizes. Adjust config if node's batch size exceeds VRAM capacity.
+4. Read `.ai/evolution/negative-results.md` — check if this node or a similar one has failed before.
+5. Check `results/{node_id}/metrics.json` — if it already exists with valid results, skip execution.
+6. Verify the node has `status: "runnable"`. If `status: "buggy"`, attempt to fix first.
 
 ## Input
 
@@ -48,8 +49,23 @@ If the node is an ablation (Stage 4.4):
 2. Remove the specified component.
 3. Save and verify.
 
-### Step 3: Submit GPU Job
+### Step 3: Git Pre-Registration
 
+Before submitting the job, commit the experiment design:
+```bash
+git add experiment_tree.json configs/{node_id}.yaml
+git commit -m "research(protocol): {node_id} — {approach_description}"
+```
+
+### Step 4: Submit GPU Job
+
+**Via SSH MCP** (if `config.yaml` has `mcp.ssh_remote: true`):
+- Use `mcp__ssh__execute_command` on the configured SSH host:
+  ```
+  nohup python3 {code_path} --config {config_path} > results/{node_id}/logs/train.log 2>&1 &
+  ```
+
+**Via Python scripts** (fallback):
 ```bash
 python3 scripts/gpu_submit.py \
   --node {node_id} \
@@ -60,8 +76,13 @@ python3 scripts/gpu_submit.py \
 
 Record the returned `job_id`.
 
-### Step 4: Poll for Completion
+### Step 5: Poll for Completion
 
+**Via SSH MCP** (if used for submission):
+- Use `mcp__ssh__execute_command`: `cat results/{node_id}/metrics.json 2>/dev/null`
+- Repeat until file exists and is valid JSON.
+
+**Via Python scripts** (fallback):
 ```bash
 python3 scripts/gpu_poll.py --node {node_id} --timeout {timeout_seconds}  # value is in seconds, not minutes
 ```
@@ -72,7 +93,7 @@ Poll behavior:
 - Timeout: 2x estimated runtime.
 - If timeout: check if partial results exist, decide whether to extend or abort.
 
-### Step 5: Collect Results
+### Step 6: Collect Results
 
 On success:
 1. Read `results/{node_id}/metrics.json` — verify it has the expected metrics.
@@ -92,7 +113,7 @@ On failure:
 4. If fixable: apply fix and re-submit (max 2 retries per node).
 5. If unfixable: mark node as `buggy` with detailed notes.
 
-### Step 6: Generate Figures
+### Step 7: Generate Figures
 
 For completed experiments, generate standard figures:
 
@@ -109,7 +130,7 @@ Use matplotlib with publication-quality settings:
 - Clear axis labels and legends
 - Color-blind friendly palette
 
-### Step 7: VLM Figure Review
+### Step 8: VLM Figure Review
 
 For each generated figure:
 1. Invoke VLM review logic (see `vlm_review.md`).
@@ -117,7 +138,15 @@ For each generated figure:
 3. If score < 4: read feedback, regenerate figure, re-review.
 4. Max 3 regeneration attempts.
 
-### Step 8: Update State
+### Step 9: Git Result Commit
+
+After collecting results, commit them:
+```bash
+git add results/{node_id}/ experiment_tree.json
+git commit -m "research(results): {node_id} — {primary_metric}={value}"
+```
+
+### Step 10: Update State
 
 Update the node in experiment_tree.json:
 ```json

@@ -41,14 +41,19 @@ From RESEARCH_PROPOSAL.md, create 8-12 search queries covering:
 
 ### Step 2: Search Semantic Scholar
 
-For each query:
+For each query, use MCP if available, fallback to script:
+
+**MCP (preferred)**:
+- Use `mcp__semantic-scholar__search_papers` with the query. Request up to 20 results per query.
+
+**Fallback**:
 ```bash
 python3 scripts/scholarly_search.py search "<query>" --limit 20
 ```
 
 Collect all unique papers. De-duplicate by title/DOI. Target: 50+ candidate papers.
 
-If `scholarly_search.py` fails or returns too few results:
+If both MCP and script fail or return too few results:
 - Try rephrased queries.
 - Fall back to web search for recent papers.
 - Log the limitation but continue.

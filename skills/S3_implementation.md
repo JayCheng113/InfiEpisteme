@@ -7,7 +7,12 @@
 
 1. Read `registry.yaml` — confirm `current_stage: S3`.
 2. Read `config.yaml` — compute settings, GPU type.
-3. Read `BASELINES.md` — baseline methods to implement.
+3. Read `hardware_profile.json` — hardware capabilities. Choose frameworks and training strategies based on available hardware:
+   - Single GPU: standard PyTorch training, gradient accumulation if VRAM is limited
+   - Multi-GPU: set up DDP/FSDP from the start
+   - No GPU: CPU-only or prepare for SSH remote execution
+   - VRAM < 16GB: use mixed precision (fp16/bf16), consider gradient checkpointing
+4. Read `BASELINES.md` — baseline methods to implement.
 4. Read `EXPERIMENT_PLAN.md` — experiment design and evaluation protocol.
 5. Read `experiment_tree.json` — root nodes to implement.
 6. Read `.ai/core/methodology.md` — proposed approach details.
