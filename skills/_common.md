@@ -1,0 +1,94 @@
+# Common Preamble — InfiEpisteme Research Pipeline
+
+> This preamble is shared across all skills. Every skill implicitly inherits these rules.
+
+## Project Identity
+
+You are operating inside **InfiEpisteme**, an automated research pipeline that takes a research direction and delivers a peer-review-quality paper, clean code, and organized results. The pipeline runs as a sequence of stages: P0 -> S0 -> S1 -> S2 -> S3 -> S4 -> S5 -> S6 -> S7 -> S8 -> COMPLETE.
+
+You are a Claude Code skill — a self-contained instruction set that reads inputs, performs work, and writes outputs. You must be **idempotent**: if invoked twice on the same inputs, you produce the same outputs without duplicating work.
+
+## Before You Start — State Loading
+
+1. **Read `registry.yaml`** — determine current stage, attempt count, and any stage-specific counters.
+2. **Read `config.yaml`** — get compute budget, target venue, target score, cross-review settings.
+3. **Read `experiment_tree.json`** — if your skill touches the experiment tree.
+4. **Check `state/JUDGE_RESULT.json`** — if it exists and shows `"passed": false` for your stage:
+   - Read the `retry_guidance` field carefully.
+   - Read the `criteria` array to see which checks failed.
+   - Address those specific failures in this run. Do not start from scratch unless retry_guidance says to.
+5. **Check existing outputs** — if the expected output files already exist and are complete, skip that work. Only redo work that failed or is missing.
+
+## .ai/ Knowledge Base Protocol
+
+### Loading (before work)
+- Always read `.ai/core/research-context.md` — the current research question and hypothesis.
+- Read additional `.ai/` documents per the loading rules in `.ai/_loading-rules.md`.
+- Maximum 5 documents loaded per skill invocation.
+- Priority order: research-context > methodology > literature > decisions > negative-results.
+
+### Maintenance (after work)
+Follow `.ai/_maintenance-rules.md` triggers:
+- Research question refined -> update `core/research-context.md`
+- New papers found -> update `core/literature.md`
+- Methodology changed -> update `core/methodology.md`
+- Major decision made -> append to `evolution/decisions.md` (ADR format)
+- Experiment failed -> append to `evolution/negative-results.md`
+- Experiment completed -> append to `evolution/experiment-log.md`
+
+### Commit Protocol
+- Knowledge updates committed separately: `docs(.ai): <summary>`
+- Never mix .ai/ updates with code or output changes in the same commit.
+
+## Anti-Hallucination Rules
+
+These rules are **non-negotiable**:
+
+1. **Every citation must be real.** If you cite [Author, Year], that paper must exist. Verify via `python3 scripts/scholarly_search.py` or Semantic Scholar API.
+2. **Never fabricate paper titles, authors, venues, or years.** If unsure, search first.
+3. **Never fabricate experimental numbers.** Every number in a table must come from an actual experiment run or a verified published paper.
+4. **Every \cite{} in LaTeX must match an entry in bibliography.bib.** No phantom citations.
+5. **If you cannot verify a claim, say so explicitly** rather than inventing a reference.
+
+## Output Rules
+
+### File Scope
+- Only create or modify files that your skill's "Output" section specifies.
+- Never modify files owned by another skill unless explicitly instructed.
+- Never delete files created by previous stages.
+
+### Commit Format
+Stage work commits: `<stage>: <summary>` (e.g., `S1: complete literature survey with 25 papers`)
+Knowledge commits: `docs(.ai): <summary>`
+
+### Idempotency
+- Before writing an output file, check if it already exists with valid content.
+- If it does, skip or update incrementally rather than overwriting from scratch.
+- Use timestamps or checksums when possible to detect staleness.
+
+## Error Handling
+
+When something fails:
+1. **Log the failure** to `.ai/evolution/negative-results.md` with:
+   - What was attempted
+   - What went wrong (error message or unexpected result)
+   - Why it likely failed (your hypothesis)
+   - Implications for future attempts
+2. **Do not silently retry** without logging the failure first.
+3. **Do not proceed past a blocking failure** — if a critical input is missing or corrupted, stop and report clearly.
+
+## Retry Handling
+
+When invoked as a retry (state/JUDGE_RESULT.json shows failure):
+1. Read `retry_guidance` from the judge result.
+2. Read `criteria` array to find which checks failed.
+3. Focus your work on the failed criteria. Do not redo passing criteria.
+4. If the same criterion has failed 3+ times, add a detailed note to `.ai/evolution/negative-results.md` explaining the pattern and stop.
+
+## When Done
+
+Every skill must end by:
+1. Writing all expected output files.
+2. Updating any .ai/ documents per maintenance rules.
+3. Reporting a brief summary of what was produced and any concerns.
+4. The orchestrator will then invoke `judge.md` to evaluate your outputs.

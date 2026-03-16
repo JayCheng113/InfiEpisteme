@@ -1,0 +1,16 @@
+# Pipeline state — managed by orchestrator, do not edit manually
+phase: "alignment"
+current_stage: "P0"
+stages:
+  P0: { status: pending, attempts: 0 }
+  S0: { status: pending, attempts: 0 }
+  S1: { status: pending, attempts: 0, papers_reviewed: 0, target: 20 }
+  S2: { status: pending, attempts: 0 }
+  S3: { status: pending, attempts: 0 }
+  S4: { status: pending, attempts: 0, tree_stages_complete: 0, tree_stages_total: 4 }
+  S5: { status: pending, attempts: 0 }
+  S6: { status: pending, attempts: 0 }
+  S7: { status: pending, attempts: 0, review_cycles: 0, current_score: 0 }
+  S8: { status: pending, attempts: 0 }
+target_venue: ""
+target_score: 6.0

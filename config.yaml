@@ -1,0 +1,26 @@
+# InfiEpisteme Research Agent Configuration
+# Fill in before running: python run.py start
+
+research_direction: ""     # your research interest — one sentence or paragraph
+target_venue: ""           # e.g. "NeurIPS 2026", "ICML 2026", or "arxiv"
+target_score: 6.0          # minimum average reviewer score to accept
+
+compute:
+  gpu_hours: 100           # available GPU budget
+  gpu_type: "A100"         # GPU type available
+  parallel_jobs: 3         # how many experiments to run in parallel
+
+resources:
+  semantic_scholar_key: "" # optional, for higher API throughput
+
+notify:
+  email: ""
+  telegram: ""
+
+cross_review:
+  enabled: true
+  model: "gpt-4o"
+  api_key_env: "OPENAI_API_KEY"
+  personas_external: ["R1", "R3"]
+  personas_internal: ["R2"]
+  max_rounds: 4

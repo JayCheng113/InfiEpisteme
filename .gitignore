@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# LaTeX
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.synctex.gz
+
+# Secrets
+config_private.yaml
+
+# Large generated outputs (track selectively)
+results/
+DELIVERY/
+
+# Runtime state (regenerated on resume)
+state/
+
+# Skill execution logs
+state/*_output.log
+state/*_judge.log
+
+# Template reference (not part of the project)
+.ai-template/
+
+# Old v1 files (deleted)
+src/
+agents/
+run.py
