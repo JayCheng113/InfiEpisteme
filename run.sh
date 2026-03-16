@@ -11,19 +11,26 @@ MAX_RETRIES=3
 
 get_timeout() {
     case "$1" in
-        P0) echo 1800 ;;   # 30m
-        S0) echo 300 ;;    # 5m
-        S1) echo 1200 ;;   # 20m
-        S2) echo 900 ;;    # 15m
-        S3) echo 1800 ;;   # 30m
-        S4) echo 7200 ;;   # 120m
-        S5) echo 900 ;;    # 15m
-        S6) echo 1500 ;;   # 25m
-        S7) echo 1800 ;;   # 30m
-        S8) echo 900 ;;    # 15m
-        *)  echo 3600 ;;   # 60m default
+        P0) echo 1800 ;;      # 30m
+        S0) echo 300 ;;       # 5m
+        S1) echo 1200 ;;      # 20m
+        S2) echo 900 ;;       # 15m
+        S3) echo 1800 ;;      # 30m
+        S4) echo 7200 ;;      # 120m (full S4, used as outer limit)
+        S4.1) echo 2400 ;;    # 40m per sub-stage
+        S4.2) echo 1800 ;;    # 30m
+        S4.3) echo 1800 ;;    # 30m
+        S4.4) echo 1200 ;;    # 20m
+        S5) echo 900 ;;       # 15m
+        S6) echo 1500 ;;      # 25m
+        S7) echo 1800 ;;      # 30m
+        S8) echo 900 ;;       # 15m
+        *)  echo 3600 ;;      # 60m default
     esac
 }
+
+# S4 sub-stages for checkpoint-based execution
+S4_SUBSTAGES=("S4.1" "S4.2" "S4.3" "S4.4")
 
 get_stage() {
     python3 scripts/parse_state.py current_stage
@@ -37,72 +44,135 @@ timestamp() {
     date "+%H:%M:%S"
 }
 
-run_stage() {
-    local stage="$1"
-
-    # Find skill file(s) for this stage
-    local skill_files=""
-    for f in skills/${stage}*.md; do
-        [ -f "$f" ] && skill_files="$skill_files $f"
-    done
-
-    if [ -z "$skill_files" ]; then
-        echo "[$(timestamp)] ERROR: No skill file for stage $stage"
-        return 1
-    fi
-
-    # Build prompt: _common.md + stage skill(s)
+build_prompt() {
+    # Build prompt: _common.md + given skill file(s) + optional suffix
     local prompt=""
     if [ -f skills/_common.md ]; then
         prompt="$(cat skills/_common.md)"$'\n\n'
     fi
-    for f in $skill_files; do
-        prompt="$prompt$(cat "$f")"$'\n\n'
+    for f in "$@"; do
+        [ -f "$f" ] && prompt="$prompt$(cat "$f")"$'\n\n'
+    done
+    echo "$prompt"
+}
+
+run_skill_execution() {
+    # Execute a skill prompt, verify, memory sync, judge, advance
+    # Args: stage_label skill_files... [-- suffix_text]
+    local stage_label="$1"; shift
+    local guard_stage="${stage_label%%.*}"  # S4.1 -> S4 for state_guard
+
+    local skill_files=()
+    local suffix=""
+    while [ $# -gt 0 ]; do
+        if [ "$1" = "--" ]; then
+            shift; suffix="$*"; break
+        fi
+        skill_files+=("$1"); shift
     done
 
-    echo "[$(timestamp)] Executing skill for $stage..."
+    local prompt
+    prompt="$(build_prompt "${skill_files[@]}")"
+    [ -n "$suffix" ] && prompt="$prompt"$'\n\n'"$suffix"
 
-    # P0 uses -p mode. User provides research_direction in config.yaml before running.
-    # For interactive Q&A, run: claude -p skills/P0_clarification.md manually.
-
-    # THE KEY: Claude Code executes the skill (with per-stage timeout)
-    local stage_timeout=$(get_timeout "$stage")
-    if ! timeout "$stage_timeout" claude -p "$prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent" 2>&1 | tee "state/${stage}_output.log"; then
+    echo "[$(timestamp)] Executing skill for $stage_label..."
+    local stage_timeout
+    stage_timeout=$(get_timeout "$stage_label")
+    if ! timeout "$stage_timeout" claude -p "$prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent" 2>&1 | tee "state/${stage_label}_output.log"; then
         echo "[$(timestamp)] Skill execution returned non-zero"
     fi
 
     # State Guardian: verify outputs exist
-    echo "[$(timestamp)] State Guardian verifying $stage outputs..."
-    python3 scripts/state_guard.py verify --stage "$stage"
+    echo "[$(timestamp)] State Guardian verifying $guard_stage outputs..."
+    python3 scripts/state_guard.py verify --stage "$guard_stage"
 
-    # Memory Sync: consolidate knowledge into .ai/ (dedicated LLM call)
-    echo "[$(timestamp)] Memory Sync: consolidating knowledge from $stage..."
-    local mem_prompt="$(cat skills/_common.md)"$'\n\n'"$(cat skills/memory_sync.md)"$'\n\n'"Stage just completed: $stage"
-    if ! claude -p "$mem_prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep" 2>&1 | tee "state/${stage}_memory.log"; then
+    # Memory Sync: consolidate knowledge
+    echo "[$(timestamp)] Memory Sync: consolidating knowledge from $stage_label..."
+    local mem_prompt
+    mem_prompt="$(build_prompt skills/memory_sync.md)"
+    mem_prompt="$mem_prompt"$'\n\n'"Stage just completed: $stage_label"
+    if ! claude -p "$mem_prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep" 2>&1 | tee "state/${stage_label}_memory.log"; then
         echo "[$(timestamp)] Memory sync returned non-zero (non-fatal)"
     fi
 
-    # State Guardian: verify memory quality (runs a second time intentionally —
-    # the first verify checks skill outputs, this one checks memory_sync results.
-    # Both write to GUARD_RESULT.json; the second overwrites the first, which is
-    # acceptable since the post-memory-sync state is the more complete check.)
-    echo "[$(timestamp)] State Guardian verifying $stage memory..."
-    python3 scripts/state_guard.py verify --stage "$stage"
+    # State Guardian: verify memory quality
+    echo "[$(timestamp)] State Guardian verifying $guard_stage memory..."
+    python3 scripts/state_guard.py verify --stage "$guard_stage"
 
     # LLM-as-Judge: content quality evaluation
-    echo "[$(timestamp)] Running judge gate for $stage..."
-    local judge_prompt="$(cat skills/_common.md)"$'\n\n'"$(cat skills/judge.md)"$'\n\n'"Current stage to judge: $stage"
-    if ! claude -p "$judge_prompt" --allowedTools "Bash,Read,Glob,Grep" 2>&1 | tee "state/${stage}_judge.log"; then
+    echo "[$(timestamp)] Running judge gate for $stage_label..."
+    local judge_prompt
+    judge_prompt="$(build_prompt skills/judge.md)"
+    judge_prompt="$judge_prompt"$'\n\n'"Current stage to judge: $guard_stage (sub-stage: $stage_label)"
+    if ! claude -p "$judge_prompt" --allowedTools "Bash,Read,Glob,Grep" 2>&1 | tee "state/${stage_label}_judge.log"; then
         echo "[$(timestamp)] Judge execution returned non-zero"
     fi
 
     # State Guardian: advance or fail based on judge result
     echo "[$(timestamp)] Evaluating judge result..."
-    if python3 scripts/state_guard.py advance --stage "$stage"; then
-        return 0
-    else
+    python3 scripts/state_guard.py advance --stage "$guard_stage"
+}
+
+run_s4_with_checkpoints() {
+    # S4 special handling: execute 4 sub-stages with checkpoint between each
+    local common="skills/_common.md"
+    local s4_main="skills/S4_experiments.md"
+    local s4_node="skills/S4_run_node.md"
+
+    for substage in "${S4_SUBSTAGES[@]}"; do
+        # Check if this sub-stage is already complete
+        local tree_complete
+        tree_complete=$(python3 -c "
+import json, pathlib
+tree = json.loads(pathlib.Path('experiment_tree.json').read_text()) if pathlib.Path('experiment_tree.json').exists() else {}
+done = tree.get('metadata', {}).get('current_stage', '4.0')
+# S4.1 -> 4.1
+target = '${substage}'.replace('S4.', '4.')
+# Compare: if current_stage > target, this substage is done
+print('done' if done > target else 'pending')
+" 2>/dev/null || echo "pending")
+
+        if [ "$tree_complete" = "done" ]; then
+            echo "[$(timestamp)] Sub-stage $substage already complete, skipping."
+            continue
+        fi
+
+        echo "[$(timestamp)] ─── S4 Checkpoint: $substage ───"
+
+        # Execute sub-stage with targeted instruction
+        local suffix="EXECUTE ONLY sub-stage ${substage}. Read experiment_tree.json to determine current progress. Complete this sub-stage, update experiment_tree.json, then STOP. Do not proceed to the next sub-stage."
+
+        if ! run_skill_execution "$substage" "$s4_main" "$s4_node" -- "$suffix"; then
+            echo "[$(timestamp)] Sub-stage $substage FAILED"
+            return 1
+        fi
+
+        echo "[$(timestamp)] Sub-stage $substage checkpoint saved."
+    done
+    return 0
+}
+
+run_stage() {
+    local stage="$1"
+
+    # S4 uses checkpoint-based execution with sub-stages
+    if [ "$stage" = "S4" ]; then
+        run_s4_with_checkpoints
+        return $?
+    fi
+
+    # Find skill file(s) for this stage
+    local skill_files=()
+    for f in skills/${stage}*.md; do
+        [ -f "$f" ] && skill_files+=("$f")
+    done
+
+    if [ ${#skill_files[@]} -eq 0 ]; then
+        echo "[$(timestamp)] ERROR: No skill file for stage $stage"
         return 1
     fi
+
+    run_skill_execution "$stage" "${skill_files[@]}"
 }
 
 run_hardware_detection() {

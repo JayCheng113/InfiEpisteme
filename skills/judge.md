@@ -85,6 +85,7 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] Compile test: `cd paper && pdflatex main.tex` exits with code 0
 - [ ] No undefined references ("??" in PDF)
 - [ ] Every \cite{} key exists in bibliography.bib
+- [ ] **Full citation verification**: Run `python3 scripts/verify_citations.py --strict` and check `state/CITATION_VERIFY.json` — 100% pass rate required
 
 #### S7 — Review-Revise
 - [ ] `reviews/` directory has at least 1 cycle
@@ -131,7 +132,7 @@ If all Layer 1 checks pass, perform qualitative evaluation. Adopt an **adversari
 - Is the writing clear and claims backed by evidence?
 - Are figures informative and properly captioned?
 - Venue-calibrated assessment: would this paper be competitive at the target venue?
-- Citation verification: spot-check 3 random `\cite{}` entries through the 5-step verification protocol (search, verify in 2+ sources, check BibTeX source, validate context, check key format). See `skills/references/citation-verification.md`.
+- **Full citation verification**: Run `python3 scripts/verify_citations.py --strict` for 100% coverage. Check `state/CITATION_VERIFY.json` for results. Every unverified citation must be investigated — remove if cannot be confirmed in 2+ sources. This replaces the old spot-check approach.
 
 **For S7 (Review)**:
 - Were critical weaknesses genuinely addressed?

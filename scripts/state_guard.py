@@ -148,13 +148,31 @@ def verify_stage(stage: str) -> dict:
         if tree_path.exists():
             tree = json.loads(tree_path.read_text())
             nodes = tree.get("nodes", [])
+
+            # Schema validation: every node must have required fields
+            required_node_fields = {"id", "status"}
             for node in nodes:
+                missing = required_node_fields - set(node.keys())
+                if missing:
+                    report["warnings"].append(
+                        f"Node {node.get('id', '?')} missing fields: {missing}"
+                    )
                 if node.get("status") == "complete" and node.get("results_path"):
                     results_path = ROOT / node["results_path"]
                     if not results_path.exists():
                         report["warnings"].append(
                             f"Node {node['id']} claims complete but {node['results_path']} missing"
                         )
+
+            # S2 check: >= 6 nodes
+            if stage == "S3" and len(nodes) < 6:
+                report["warnings"].append(f"experiment_tree.json has only {len(nodes)} nodes (need >= 6)")
+
+    # Check 5: Content-level deterministic checks per stage
+    _run_content_checks(stage, report)
+
+    # Check 6: Hard constraint enforcement
+    _enforce_hard_constraints(stage, report)
 
     # Save repairs if any
     if report["repairs"]:
@@ -231,6 +249,197 @@ def advance_stage(stage: str) -> bool:
         save_registry(reg)
         print(f"FAILED — {reasons}")
         return False
+
+
+def _run_content_checks(stage: str, report: dict):
+    """Content-level deterministic checks that go beyond file existence."""
+
+    if stage == "S1":
+        # RELATED_WORK.md: count unique citations >= 20
+        rw_path = ROOT / "RELATED_WORK.md"
+        if rw_path.exists():
+            content = rw_path.read_text()
+            # Count citation patterns: [Author, Year] or similar
+            citations = set(re.findall(r'\[[\w\s,]+\d{4}\]', content))
+            if len(citations) < 20:
+                report["checks"].append({"check": "S1_paper_count", "exists": False})
+                report["passed"] = False
+                report["warnings"].append(
+                    f"RELATED_WORK.md has only {len(citations)} unique citations (need >= 20)"
+                )
+            else:
+                report["checks"].append({"check": "S1_paper_count", "exists": True})
+
+        # BASELINES.md: count baselines >= 3
+        bl_path = ROOT / "BASELINES.md"
+        if bl_path.exists():
+            count = bl_path.read_text().count("## Baseline")
+            if count < 3:
+                report["checks"].append({"check": "S1_baseline_count", "exists": False})
+                report["passed"] = False
+                report["warnings"].append(f"BASELINES.md has only {count} baselines (need >= 3)")
+            else:
+                report["checks"].append({"check": "S1_baseline_count", "exists": True})
+
+    elif stage == "S2":
+        # experiment_tree.json: >= 6 nodes with required fields
+        tree_path = ROOT / "experiment_tree.json"
+        if tree_path.exists():
+            tree = json.loads(tree_path.read_text())
+            nodes = tree.get("nodes", [])
+            valid = [n for n in nodes if n.get("id") and n.get("approach") and n.get("status")]
+            if len(valid) < 6:
+                report["checks"].append({"check": "S2_node_count", "exists": False})
+                report["passed"] = False
+                report["warnings"].append(
+                    f"experiment_tree.json has {len(valid)} valid nodes (need >= 6)"
+                )
+            else:
+                report["checks"].append({"check": "S2_node_count", "exists": True})
+
+    elif stage == "S5":
+        # ANALYSIS.md must contain p-value or significance keywords
+        analysis_path = ROOT / "ANALYSIS.md"
+        if analysis_path.exists():
+            content = analysis_path.read_text().lower()
+            has_stats = any(kw in content for kw in ["p-value", "p =", "p<", "significance", "confidence interval", "t-test", "bootstrap"])
+            if not has_stats:
+                report["warnings"].append("ANALYSIS.md missing statistical significance keywords")
+
+        # tables/ must have .tex files
+        tables_dir = ROOT / "tables"
+        if tables_dir.exists():
+            tex_files = list(tables_dir.glob("*.tex"))
+            if not tex_files:
+                report["warnings"].append("tables/ directory exists but has no .tex files")
+
+    elif stage == "S6":
+        # bibliography.bib must have entries
+        bib_path = ROOT / "bibliography.bib"
+        if bib_path.exists():
+            content = bib_path.read_text()
+            entry_count = len(re.findall(r'@\w+\{', content))
+            if entry_count == 0:
+                report["checks"].append({"check": "S6_bib_entries", "exists": False})
+                report["passed"] = False
+                report["warnings"].append("bibliography.bib has 0 entries")
+            else:
+                report["checks"].append({"check": "S6_bib_entries", "exists": True})
+
+            # Validate BibTeX entries have required fields
+            entries_missing_fields = []
+            for match in re.finditer(r'@\w+\{([^,]+),', content):
+                key = match.group(1).strip()
+                # Find the entry block
+                start = match.start()
+                brace_count = 0
+                end = start
+                for i in range(match.end() - 1, len(content)):
+                    if content[i] == '{':
+                        brace_count += 1
+                    elif content[i] == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            end = i + 1
+                            break
+                block = content[start:end].lower()
+                if 'title' not in block:
+                    entries_missing_fields.append(f"{key}: missing title")
+                if 'year' not in block:
+                    entries_missing_fields.append(f"{key}: missing year")
+            if entries_missing_fields:
+                report["warnings"].append(
+                    f"BibTeX entries with missing fields: {entries_missing_fields[:5]}"
+                )
+
+        # paper.pdf file size > 0
+        pdf_path = ROOT / "paper.pdf"
+        if pdf_path.exists() and pdf_path.stat().st_size == 0:
+            report["checks"].append({"check": "S6_pdf_nonzero", "exists": False})
+            report["passed"] = False
+            report["warnings"].append("paper.pdf exists but is empty (0 bytes)")
+
+        # Citation verification result
+        cv_path = ROOT / "state" / "CITATION_VERIFY.json"
+        if cv_path.exists():
+            cv = json.loads(cv_path.read_text())
+            if cv.get("pass_rate", 0) < 1.0:
+                unverified = cv.get("unverified", 0)
+                report["warnings"].append(
+                    f"Citation verification: {unverified} unverified entries "
+                    f"(pass rate: {cv.get('pass_rate', 0):.0%})"
+                )
+            orphans = cv.get("orphan_citations", [])
+            if orphans:
+                report["warnings"].append(f"Orphan citations (in .tex but not .bib): {orphans}")
+
+    elif stage == "S8":
+        # DELIVERY/ completeness
+        delivery = ROOT / "DELIVERY"
+        if delivery.exists():
+            required = ["paper.pdf", "code", "README.md"]
+            for item in required:
+                if not (delivery / item).exists():
+                    report["warnings"].append(f"DELIVERY/{item} missing")
+
+        checklist_path = delivery / "checklist_report.md" if delivery.exists() else None
+        if checklist_path and not checklist_path.exists():
+            report["warnings"].append("DELIVERY/checklist_report.md missing")
+
+
+def _enforce_hard_constraints(stage: str, report: dict):
+    """Hard constraints that MUST be enforced programmatically."""
+
+    # GPU budget check (for S4)
+    if stage == "S4":
+        config_path = ROOT / "config.yaml"
+        tree_path = ROOT / "experiment_tree.json"
+        if config_path.exists() and tree_path.exists():
+            with open(config_path) as f:
+                config = yaml.safe_load(f) or {}
+            budget = config.get("compute", {}).get("gpu_hours", 0)
+
+            tree = json.loads(tree_path.read_text())
+            total_used = 0.0
+            for node in tree.get("nodes", []):
+                results = node.get("results", {})
+                if isinstance(results, dict):
+                    total_used += results.get("gpu_hours", 0)
+
+            if budget > 0 and total_used > budget:
+                report["checks"].append({"check": "gpu_budget", "exists": False})
+                report["passed"] = False
+                report["warnings"].append(
+                    f"GPU BUDGET EXCEEDED: used {total_used:.1f}h of {budget}h budget"
+                )
+            elif budget > 0:
+                report["checks"].append({"check": "gpu_budget", "exists": True})
+                remaining = budget - total_used
+                if remaining < budget * 0.1:
+                    report["warnings"].append(
+                        f"GPU budget low: {remaining:.1f}h remaining of {budget}h"
+                    )
+
+    # Git pre-registration check (for S4)
+    if stage == "S4":
+        import subprocess
+        try:
+            log = subprocess.run(
+                ["git", "log", "--oneline", "--all"],
+                capture_output=True, text=True, cwd=ROOT, timeout=10,
+            )
+            if log.returncode == 0:
+                lines = log.stdout.strip().split("\n")
+                protocol_commits = [l for l in lines if "research(protocol):" in l]
+                result_commits = [l for l in lines if "research(results):" in l]
+
+                if result_commits and not protocol_commits:
+                    report["warnings"].append(
+                        "Git pre-registration violation: found research(results): "
+                        "commits but no research(protocol): commits"
+                    )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass  # Git not available, skip check
 
 
 def _check_ai_content_quality(ai_file: str, content: str) -> str | None:
