@@ -139,17 +139,9 @@ After every figure generation:
 
 ## Experiment Logging
 
-After EVERY node execution, append to `.ai/evolution/experiment-log.md`:
+After EVERY node execution, log results in your stage output files (e.g., `RESULTS_SUMMARY.md`, `experiment_tree.json`). The Memory Synthesizer (`memory_sync.md`) will consolidate these into `.ai/evolution/experiment-log.md` and `.ai/evolution/negative-results.md` after your skill completes.
 
-```
-| {date} | {node_id} | {description} | {primary_metric: value} | {notes} |
-```
-
-After EVERY failure, append to `.ai/evolution/negative-results.md`:
-- What was tried
-- What happened (error message, unexpected result)
-- Why it likely failed
-- Implications for future attempts
+Exception: If you discover a critical failure during your work, you MAY append to `.ai/evolution/negative-results.md` immediately (per `_common.md` rules).
 
 ## Output Files
 

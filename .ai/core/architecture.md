@@ -42,7 +42,7 @@ User → Phase 0 (Direction Alignment, ~30min)
 Bash loop: reads registry.yaml, dispatches skills, runs state guard and judge, advances stages. ~80 lines.
 
 ### Skills (`skills/`)
-17 .md files — Claude Code native execution. Each is a complete instruction set:
+18 .md files — Claude Code native execution. Each is a complete instruction set:
 - `_common.md` — shared preamble (state loading, anti-hallucination rules)
 - `P0_clarification.md`, `P0_novelty.md` — Phase 0 (interactive)
 - `S0_init.md` through `S8_delivery.md` — pipeline stages

@@ -37,9 +37,11 @@ cd InfiEpisteme
 pip install pyyaml requests
 
 # 2. (Optional) Install MCP servers for enhanced capabilities
-claude mcp add semantic-scholar -- npx -y @anthropic/mcp-semantic-scholar
-claude mcp add system-monitor -- npx -y @huhabla/mcp-system-monitor
-claude mcp add ssh -- npx -y @anthropic/mcp-ssh-server  # only if using remote GPU
+#    Replace <package> with the actual npm package for each server.
+#    See https://github.com/modelcontextprotocol/servers for available MCP servers.
+claude mcp add semantic-scholar -- npx -y <semantic-scholar-mcp-package>
+claude mcp add system-monitor -- npx -y <system-monitor-mcp-package>
+claude mcp add ssh -- npx -y <ssh-mcp-package>  # only if using remote GPU
 
 # 3. Edit config.yaml
 #    - Set research_direction

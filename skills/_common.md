@@ -111,6 +111,5 @@ When invoked as a retry (state/JUDGE_RESULT.json shows failure):
 
 Every skill must end by:
 1. Writing all expected output files.
-2. Updating any .ai/ documents per maintenance rules.
-3. Reporting a brief summary of what was produced and any concerns.
-4. The orchestrator will then invoke `judge.md` to evaluate your outputs.
+2. Reporting a brief summary of what was produced and any concerns.
+3. The orchestrator will then invoke `memory_sync.md` to consolidate knowledge into `.ai/`, followed by `judge.md` to evaluate your outputs.

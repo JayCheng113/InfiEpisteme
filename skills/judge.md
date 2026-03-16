@@ -39,7 +39,7 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] `.ai/core/methodology.md` exists and has content
 - [ ] `.ai/evolution/decisions.md` contains ADR-001
 - [ ] All required directories exist (state/, results/, paper/sections/, etc.)
-- [ ] `hardware_profile.json` exists with valid JSON (GPU/CPU/memory detected)
+- [ ] `hardware_profile.json` exists with valid JSON (GPU/CPU/memory detected) — **warn but do not fail** if missing (hardware detection is non-fatal)
 
 #### S1 — Literature Survey
 - [ ] `RELATED_WORK.md` exists

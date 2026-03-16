@@ -13,12 +13,12 @@
    - No GPU: CPU-only or prepare for SSH remote execution
    - VRAM < 16GB: use mixed precision (fp16/bf16), consider gradient checkpointing
 4. Read `BASELINES.md` — baseline methods to implement.
-4. Read `EXPERIMENT_PLAN.md` — experiment design and evaluation protocol.
-5. Read `experiment_tree.json` — root nodes to implement.
-6. Read `.ai/core/methodology.md` — proposed approach details.
-7. Read `.ai/evolution/negative-results.md` — avoid repeating past mistakes.
-8. Read `.ai/evolution/experiment-log.md` — prior experiment context.
-9. Check `state/JUDGE_RESULT.json` — if retrying:
+5. Read `EXPERIMENT_PLAN.md` — experiment design and evaluation protocol.
+6. Read `experiment_tree.json` — root nodes to implement.
+7. Read `.ai/core/methodology.md` — proposed approach details.
+8. Read `.ai/evolution/negative-results.md` — avoid repeating past mistakes.
+9. Read `.ai/evolution/experiment-log.md` — prior experiment context.
+10. Check `state/JUDGE_RESULT.json` — if retrying:
    - Read `retry_guidance` for specific code issues.
    - Common failures: node not runnable, baseline mismatch, missing evaluation harness.
    - Fix the specific issues rather than rewriting everything.
