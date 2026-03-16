@@ -1,5 +1,5 @@
 # InfiEpisteme Research Agent Configuration
-# Fill in before running: python run.py start
+# Fill in before running: ./run.sh start
 
 research_direction: ""     # your research interest — one sentence or paragraph
 target_venue: ""           # e.g. "NeurIPS 2026", "ICML 2026", or "arxiv"

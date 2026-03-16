@@ -66,9 +66,10 @@ def main():
         job_id = result.stdout.strip().split()[-1]  # "Submitted batch job 12345"
     else:
         # Local subprocess
+        log_fh = open(log_file, "w")
         proc = subprocess.Popen(
             ["python3", args.script, "--config", args.config, "--output-dir", str(results_dir)],
-            stdout=open(log_file, "w"),
+            stdout=log_fh,
             stderr=subprocess.STDOUT,
         )
         job_id = str(proc.pid)

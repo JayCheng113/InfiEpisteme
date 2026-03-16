@@ -240,7 +240,7 @@ Format: standard LaTeX tabular, ready for inclusion in paper.
 
 | File | Action |
 |------|--------|
-| `.ai/evolution/decisions.md` | Append ADR-003: analysis conclusions and implications |
+| `.ai/evolution/decisions.md` | (updated by memory_sync — do not write directly) |
 
 ## Quality Criteria (from PIPELINE.md)
 

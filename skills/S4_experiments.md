@@ -45,8 +45,8 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
 
 1. **Collect runnable root nodes** from experiment_tree.json (status=runnable).
 2. **For each root node**, execute the experiment:
-   - Submit GPU job: `python3 scripts/gpu_submit.py --node_id {id} --config configs/{id}.yaml`
-   - Poll for completion: `python3 scripts/gpu_poll.py --job_id {job_id}`
+   - Submit GPU job: `python3 scripts/gpu_submit.py --node {id} --script src/method/train.py --config configs/{id}.yaml`
+   - Poll for completion: `python3 scripts/gpu_poll.py --node {id}`
    - If poll returns success: read `results/{node_id}/metrics.json`
    - If poll returns failure: mark node as `buggy`, log to negative-results.md
 3. **For each completed node**:

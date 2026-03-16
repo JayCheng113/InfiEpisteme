@@ -52,11 +52,10 @@ If the node is an ablation (Stage 4.4):
 
 ```bash
 python3 scripts/gpu_submit.py \
-  --node_id {node_id} \
-  --code_path {code_path} \
-  --config_path {config_path} \
-  --gpu_type {gpu_type} \
-  --output_dir results/{node_id}/
+  --node {node_id} \
+  --script {code_path} \
+  --config {config_path} \
+  --gpu-type {gpu_type}
 ```
 
 Record the returned `job_id`.
@@ -64,7 +63,7 @@ Record the returned `job_id`.
 ### Step 4: Poll for Completion
 
 ```bash
-python3 scripts/gpu_poll.py --job_id {job_id} --timeout {timeout_minutes}
+python3 scripts/gpu_poll.py --node {node_id} --timeout {timeout_seconds}  # value is in seconds, not minutes
 ```
 
 Poll behavior:
@@ -151,8 +150,8 @@ Update the node in experiment_tree.json:
 
 | File | Action |
 |------|--------|
-| `.ai/evolution/experiment-log.md` | Append run entry |
-| `.ai/evolution/negative-results.md` | Append if failed |
+| `.ai/evolution/experiment-log.md` | (updated by memory_sync — do not write directly) |
+| `.ai/evolution/negative-results.md` | (updated by memory_sync — do not write directly) |
 
 ## Rules
 

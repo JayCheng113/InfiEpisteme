@@ -29,6 +29,13 @@ def main():
     reg = load()
     cmd = sys.argv[1]
 
+    # Validate stage argument for commands that require one
+    if cmd in ("set_running", "advance", "fail", "reset", "set"):
+        stage = sys.argv[2]
+        if stage not in STAGE_ORDER:
+            print(f"ERROR: invalid stage {stage}", file=sys.stderr)
+            sys.exit(1)
+
     if cmd == "set_running":
         stage = sys.argv[2]
         reg["stages"][stage]["status"] = "running"

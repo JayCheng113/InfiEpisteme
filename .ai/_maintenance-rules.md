@@ -14,18 +14,9 @@ description: Research-specific protocol for when and how to update .ai/ knowledg
 5. **Experiment failed** → Append to `evolution/negative-results.md`
 6. **Experiment completed** → Append to `evolution/experiment-log.md`
 
-## Agent-Specific Responsibilities
+## Memory Synthesizer Responsibility
 
-| Agent | Must Update |
-|-------|-------------|
-| Clarification | research-context.md |
-| Novelty Check | literature.md |
-| PhD | literature.md, methodology.md, decisions.md |
-| Postdoc | methodology.md, decisions.md |
-| ML Engineer | experiment-log.md, negative-results.md |
-| Experiment Manager | experiment-log.md, negative-results.md |
-| Writing | (reads only — no updates) |
-| Reviewer | (reads only — no updates) |
+Individual skills do NOT update .ai/ directly. The Memory Synthesizer (`skills/memory_sync.md`) consolidates knowledge after each stage. The trigger list above documents WHAT gets updated (for memory_sync reference), but the actual writes are performed by the memory_sync skill, not by individual stage skills.
 
 ## Commit Protocol
 

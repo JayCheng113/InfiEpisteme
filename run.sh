@@ -5,8 +5,25 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
+mkdir -p state
 
 MAX_RETRIES=3
+
+get_timeout() {
+    case "$1" in
+        P0) echo 1800 ;;   # 30m
+        S0) echo 300 ;;    # 5m
+        S1) echo 1200 ;;   # 20m
+        S2) echo 900 ;;    # 15m
+        S3) echo 1800 ;;   # 30m
+        S4) echo 7200 ;;   # 120m
+        S5) echo 900 ;;    # 15m
+        S6) echo 1500 ;;   # 25m
+        S7) echo 1800 ;;   # 30m
+        S8) echo 900 ;;    # 15m
+        *)  echo 3600 ;;   # 60m default
+    esac
+}
 
 get_stage() {
     python3 scripts/parse_state.py current_stage
@@ -45,8 +62,12 @@ run_stage() {
 
     echo "[$(timestamp)] Executing skill for $stage..."
 
-    # THE KEY: Claude Code executes the skill
-    if ! claude -p "$prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent" 2>&1 | tee "state/${stage}_output.log"; then
+    # P0 uses -p mode. User provides research_direction in config.yaml before running.
+    # For interactive Q&A, run: claude -p skills/P0_clarification.md manually.
+
+    # THE KEY: Claude Code executes the skill (with per-stage timeout)
+    local stage_timeout=$(get_timeout "$stage")
+    if ! timeout "$stage_timeout" claude -p "$prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent" 2>&1 | tee "state/${stage}_output.log"; then
         echo "[$(timestamp)] Skill execution returned non-zero"
     fi
 
@@ -61,7 +82,10 @@ run_stage() {
         echo "[$(timestamp)] Memory sync returned non-zero (non-fatal)"
     fi
 
-    # State Guardian: verify memory quality
+    # State Guardian: verify memory quality (runs a second time intentionally —
+    # the first verify checks skill outputs, this one checks memory_sync results.
+    # Both write to GUARD_RESULT.json; the second overwrites the first, which is
+    # acceptable since the post-memory-sync state is the more complete check.)
     echo "[$(timestamp)] State Guardian verifying $stage memory..."
     python3 scripts/state_guard.py verify --stage "$stage"
 

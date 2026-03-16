@@ -193,8 +193,8 @@ Populated with 6 root nodes as described above.
 
 | File | Action |
 |------|--------|
-| `.ai/core/methodology.md` | Rewrite with selected approach, rationale, and experiment design |
-| `.ai/evolution/decisions.md` | Append ADR-002: hypothesis selection rationale |
+| `.ai/core/methodology.md` | (updated by memory_sync — do not write directly) |
+| `.ai/evolution/decisions.md` | (updated by memory_sync — do not write directly) |
 
 ## Quality Criteria (from PIPELINE.md)
 

@@ -213,15 +213,20 @@ def advance_stage(stage: str) -> bool:
         reg["stages"][stage]["last_failure_reason"] = str(reasons)[:500]
 
         # Circuit breaker: track consecutive same-criterion failures
-        prev_reason = reg["stages"][stage].get("prev_failure_reason", "")
-        if str(reasons)[:100] == prev_reason[:100]:
+        # Extract failing criteria names for robust comparison (not raw text)
+        criteria = result.get("criteria", [])
+        failing_criteria = sorted([c.get("criterion", "")[:50] for c in criteria if not c.get("met", True)])
+        failing_key = "|".join(failing_criteria) if failing_criteria else str(reasons)[:100]
+
+        prev_key = reg["stages"][stage].get("prev_failure_key", "")
+        if failing_key == prev_key:
             count = reg["stages"][stage].get("consecutive_same_failure", 0) + 1
             reg["stages"][stage]["consecutive_same_failure"] = count
             if count >= 3:
                 print(f"CIRCUIT BREAKER: {stage} failed 3x on same criterion. Pausing.", file=sys.stderr)
         else:
             reg["stages"][stage]["consecutive_same_failure"] = 1
-        reg["stages"][stage]["prev_failure_reason"] = str(reasons)[:100]
+        reg["stages"][stage]["prev_failure_key"] = failing_key
 
         save_registry(reg)
         print(f"FAILED — {reasons}")

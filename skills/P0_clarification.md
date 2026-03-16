@@ -112,7 +112,7 @@ Also update `config.yaml` fields if the user provided:
 |------|--------|
 | `RESEARCH_PROPOSAL.md` | Create or update |
 | `config.yaml` | Update fields from user input |
-| `.ai/core/research-context.md` | Create/update with research question and hypothesis |
+| `.ai/core/research-context.md` | (updated by memory_sync — do not write directly) |
 
 ## Rules
 

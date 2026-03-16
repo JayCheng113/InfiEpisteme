@@ -64,7 +64,7 @@ run.sh (主循环)
 
 ## Rules
 
-1. Every skill reads .ai/ before working, updates .ai/ after completing work
+1. Every skill reads .ai/ before working. The Memory Synthesizer updates .ai/ after each stage.
 2. Commit knowledge updates separately: `docs(.ai): <summary>`
 3. Every failed experiment goes to `evolution/negative-results.md`
 4. Every figure must pass VLM review before paper inclusion

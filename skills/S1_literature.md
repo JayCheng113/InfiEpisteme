@@ -43,7 +43,7 @@ From RESEARCH_PROPOSAL.md, create 8-12 search queries covering:
 
 For each query:
 ```bash
-python3 scripts/scholarly_search.py --query "<query>" --limit 20
+python3 scripts/scholarly_search.py search "<query>" --limit 20
 ```
 
 Collect all unique papers. De-duplicate by title/DOI. Target: 50+ candidate papers.
@@ -168,7 +168,7 @@ BibTeX entries for ALL cited papers. Every paper mentioned in RELATED_WORK.md or
 
 | File | Action |
 |------|--------|
-| `.ai/core/literature.md` | Rewrite with: key themes, baseline summary, identified gap, top-10 papers |
+| `.ai/core/literature.md` | (updated by memory_sync — do not write directly) |
 
 ## Quality Criteria (from PIPELINE.md)
 

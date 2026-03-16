@@ -41,7 +41,7 @@ For each query, search using:
 
 **Semantic Scholar** (primary):
 ```bash
-python3 scripts/scholarly_search.py --query "<query>" --limit 20
+python3 scripts/scholarly_search.py search "<query>" --limit 20
 ```
 
 **Web search** (supplementary):
@@ -112,7 +112,7 @@ Create or update `bibliography.bib` with all found papers (high and medium simil
 |------|--------|
 | `RESEARCH_PROPOSAL.md` | Update "Novelty Assessment" section |
 | `bibliography.bib` | Create/update with found papers in BibTeX format |
-| `.ai/core/literature.md` | Update with initial findings from novelty search |
+| `.ai/core/literature.md` | (updated by memory_sync — do not write directly) |
 
 ## Anti-Hallucination Protocol
 

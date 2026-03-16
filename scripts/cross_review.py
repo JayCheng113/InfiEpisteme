@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import yaml
@@ -71,9 +72,22 @@ def call_openai(model: str, api_key: str, system_prompt: str, user_prompt: str) 
             "temperature": 0.3,
             "max_tokens": 4000,
         }
-        resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data)
+        resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=120)
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
+
+def call_openai_with_retry(model, api_key, system_prompt, user_prompt, max_retries=3):
+    """Retry wrapper with exponential backoff for API calls."""
+    for attempt in range(max_retries):
+        try:
+            return call_openai(model, api_key, system_prompt, user_prompt)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait = 2 ** (attempt + 1)
+                print(f"API call failed (attempt {attempt+1}): {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
 def main():
     parser = argparse.ArgumentParser(description="Dispatch cross-model review")
@@ -117,7 +131,7 @@ def main():
 Provide your complete review following the format specified in your role."""
 
     print(f"Sending to {model} as {args.persona}...")
-    review = call_openai(model, api_key, system_prompt, user_prompt)
+    review = call_openai_with_retry(model, api_key, system_prompt, user_prompt)
 
     # Write review
     output_path = Path(args.output)

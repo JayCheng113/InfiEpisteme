@@ -117,7 +117,7 @@ Before compilation, verify EVERY citation:
 1. Extract all `\cite{key}` from all .tex files.
 2. For each key, verify it exists in `bibliography.bib`.
 3. For each bibliography entry, verify it refers to a real paper:
-   - Check via `python3 scripts/scholarly_search.py --query "{title}"` or web search.
+   - Check via `python3 scripts/scholarly_search.py search "{title}"` or web search.
    - Verify: title, authors, year, venue match.
 4. Remove or fix any phantom citations.
 5. Check for uncited bibliography entries (warn but do not remove — they may be used in appendix).
