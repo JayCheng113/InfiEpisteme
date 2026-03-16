@@ -126,10 +126,9 @@ run_s4_with_checkpoints() {
 import json, pathlib
 tree = json.loads(pathlib.Path('experiment_tree.json').read_text()) if pathlib.Path('experiment_tree.json').exists() else {}
 done = tree.get('metadata', {}).get('current_stage', '4.0')
-# S4.1 -> 4.1
 target = '${substage}'.replace('S4.', '4.')
-# Compare: if current_stage > target, this substage is done
-print('done' if done > target else 'pending')
+# Compare as floats to avoid lexicographic issues (e.g., 4.10 > 4.2)
+print('done' if float(done) >= float(target) + 0.1 else 'pending')
 " 2>/dev/null || echo "pending")
 
         if [ "$tree_complete" = "done" ]; then
@@ -142,6 +141,11 @@ print('done' if done > target else 'pending')
         # Execute sub-stage with targeted instruction
         local suffix="EXECUTE ONLY sub-stage ${substage}. Read experiment_tree.json to determine current progress. Complete this sub-stage, update experiment_tree.json, then STOP. Do not proceed to the next sub-stage."
 
+        # Note: if run_skill_execution fails (judge says retry), we return 1.
+        # The outer pipeline_loop will retry run_stage("S4"), which re-enters
+        # run_s4_with_checkpoints. The Python check above skips already-completed
+        # sub-stages based on experiment_tree.json metadata.current_stage, so
+        # only the failing sub-stage and later ones will re-run.
         if ! run_skill_execution "$substage" "$s4_main" "$s4_node" -- "$suffix"; then
             echo "[$(timestamp)] Sub-stage $substage FAILED"
             return 1

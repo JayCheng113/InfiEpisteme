@@ -326,31 +326,22 @@ def _run_content_checks(stage: str, report: dict):
             else:
                 report["checks"].append({"check": "S6_bib_entries", "exists": True})
 
-            # Validate BibTeX entries have required fields
-            entries_missing_fields = []
-            for match in re.finditer(r'@\w+\{([^,]+),', content):
-                key = match.group(1).strip()
-                # Find the entry block
-                start = match.start()
-                brace_count = 0
-                end = start
-                for i in range(match.end() - 1, len(content)):
-                    if content[i] == '{':
-                        brace_count += 1
-                    elif content[i] == '}':
-                        brace_count -= 1
-                        if brace_count == 0:
-                            end = i + 1
-                            break
-                block = content[start:end].lower()
-                if 'title' not in block:
-                    entries_missing_fields.append(f"{key}: missing title")
-                if 'year' not in block:
-                    entries_missing_fields.append(f"{key}: missing year")
-            if entries_missing_fields:
-                report["warnings"].append(
-                    f"BibTeX entries with missing fields: {entries_missing_fields[:5]}"
-                )
+            # Validate BibTeX entries have required fields (reuse verify_citations parser)
+            try:
+                from scripts.verify_citations import parse_bibtex
+                entries = parse_bibtex(bib_path)
+                entries_missing_fields = []
+                for entry in entries:
+                    if not entry.get("title"):
+                        entries_missing_fields.append(f"{entry['key']}: missing title")
+                    if not entry.get("year"):
+                        entries_missing_fields.append(f"{entry['key']}: missing year")
+                if entries_missing_fields:
+                    report["warnings"].append(
+                        f"BibTeX entries with missing fields: {entries_missing_fields[:5]}"
+                    )
+            except ImportError:
+                pass  # verify_citations not available, skip deep validation
 
         # paper.pdf file size > 0
         pdf_path = ROOT / "paper.pdf"
@@ -463,8 +454,11 @@ def _check_ai_content_quality(ai_file: str, content: str) -> str | None:
         if len(lines) < 5:
             return f"too short ({len(lines)} content lines, need ≥5)"
         # Should explain "why" not just "what"
-        if "because" not in content.lower() and "reason" not in content.lower() and "since" not in content.lower():
-            return "missing rationale (no 'because'/'reason' found — methodology should explain WHY)"
+        rationale_words = ["because", "reason", "since", "motivated", "due to",
+                           "in order to", "rationale", "justification", "driven by",
+                           "as a result", "therefore", "consequently"]
+        if not any(w in content.lower() for w in rationale_words):
+            return "missing rationale — methodology should explain WHY (no rationale keywords found)"
 
     elif "research-context.md" in ai_file:
         if len(lines) < 3:

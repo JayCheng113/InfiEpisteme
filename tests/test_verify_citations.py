@@ -71,6 +71,20 @@ class TestBibtexParsing(TestCase):
         self.assertEqual(len(entries), 1)
         self.assertIn("Framework", entries[0]["title"])
 
+    def test_parse_deeply_nested_braces(self):
+        """Two levels of nested braces in title."""
+        bib = self.tmpdir / "test.bib"
+        bib.write_text("""@article{test_2023_conv,
+  title={On the {Convergence of {Adam} and Beyond}},
+  author={Test, Author},
+  year={2023}
+}
+""")
+        entries = vc.parse_bibtex(bib)
+        self.assertEqual(len(entries), 1)
+        self.assertIn("Convergence", entries[0]["title"])
+        self.assertIn("Adam", entries[0]["title"])
+
     def test_extract_field_missing(self):
         block = "@article{test, author={Smith}, year={2023}}"
         title = vc._extract_field(block, "title")

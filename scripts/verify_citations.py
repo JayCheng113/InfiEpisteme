@@ -87,16 +87,44 @@ def parse_bibtex(bib_path: Path) -> list[dict]:
 
 
 def _extract_field(block: str, field: str) -> str:
-    """Extract a BibTeX field value from an entry block."""
-    # Match: field = {value} or field = "value" or field = value
-    pattern = re.compile(
-        rf'{field}\s*=\s*(?:\{{([^}}]*(?:\{{[^}}]*\}}[^}}]*)*)\}}|"([^"]*)"|(\S+))',
-        re.IGNORECASE,
-    )
+    """Extract a BibTeX field value from an entry block using brace matching."""
+    # Find field = ...
+    pattern = re.compile(rf'{field}\s*=\s*', re.IGNORECASE)
     match = pattern.search(block)
-    if match:
-        return (match.group(1) or match.group(2) or match.group(3) or "").strip()
-    return ""
+    if not match:
+        return ""
+
+    pos = match.end()
+    if pos >= len(block):
+        return ""
+
+    # Brace-delimited value: field = {value with {nested} braces}
+    if block[pos] == '{':
+        brace_count = 0
+        start = pos + 1
+        for i in range(pos, len(block)):
+            if block[i] == '{':
+                brace_count += 1
+            elif block[i] == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    return block[start:i].strip()
+        return block[start:].strip()  # unclosed brace, return what we have
+
+    # Quote-delimited value: field = "value"
+    if block[pos] == '"':
+        end = block.find('"', pos + 1)
+        if end >= 0:
+            return block[pos + 1:end].strip()
+        return block[pos + 1:].strip()
+
+    # Bare value: field = value (until comma or closing brace)
+    end = len(block)
+    for ch in (',', '}'):
+        idx = block.find(ch, pos)
+        if idx >= 0 and idx < end:
+            end = idx
+    return block[pos:end].strip()
 
 
 def verify_entry(session: requests.Session, entry: dict) -> dict:

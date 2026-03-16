@@ -29,6 +29,29 @@ except ImportError:
         HAS_REQUESTS = False
 
 
+def _extract_json(text: str) -> dict:
+    """Extract JSON from LLM response, stripping markdown fences and extra text."""
+    # Strip markdown code fences
+    text = text.strip()
+    if text.startswith("```"):
+        lines = text.split("\n")
+        # Remove first and last fence lines
+        lines = [l for l in lines if not l.strip().startswith("```")]
+        text = "\n".join(lines)
+
+    # Find first { to last }
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
+        try:
+            return json.loads(text[start:end + 1])
+        except json.JSONDecodeError:
+            pass
+
+    # Last resort: try the whole text
+    return json.loads(text)
+
+
 REVIEW_PROMPT = """You are a scientific figure reviewer. Evaluate this figure for publication quality.
 
 Score each criterion from 1 (poor) to 5 (excellent):
@@ -93,7 +116,7 @@ def review_with_sdk(image_path: Path, api_key: str) -> dict:
     )
 
     text = message.content[0].text
-    return json.loads(text)
+    return _extract_json(text)
 
 
 def review_with_requests(image_path: Path, api_key: str) -> dict:
@@ -131,7 +154,7 @@ def review_with_requests(image_path: Path, api_key: str) -> dict:
     resp.raise_for_status()
     data = resp.json()
     text = data["content"][0]["text"]
-    return json.loads(text)
+    return _extract_json(text)
 
 
 def fallback_review(image_path: Path) -> dict:
