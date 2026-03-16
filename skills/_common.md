@@ -28,17 +28,9 @@ You are a Claude Code skill — a self-contained instruction set that reads inpu
 - Priority order: research-context > methodology > literature > decisions > negative-results.
 
 ### Maintenance (after work)
-Follow `.ai/_maintenance-rules.md` triggers:
-- Research question refined -> update `core/research-context.md`
-- New papers found -> update `core/literature.md`
-- Methodology changed -> update `core/methodology.md`
-- Major decision made -> append to `evolution/decisions.md` (ADR format)
-- Experiment failed -> append to `evolution/negative-results.md`
-- Experiment completed -> append to `evolution/experiment-log.md`
+**You do NOT need to update .ai/ files.** A dedicated Memory Synthesizer (`skills/memory_sync.md`) runs automatically after your skill completes and handles all .ai/ updates. Focus on producing your stage outputs.
 
-### Commit Protocol
-- Knowledge updates committed separately: `docs(.ai): <summary>`
-- Never mix .ai/ updates with code or output changes in the same commit.
+Exception: If you discover a critical failure during your work, you MAY append to `.ai/evolution/negative-results.md` immediately (don't wait for memory sync).
 
 ## Anti-Hallucination Rules
 

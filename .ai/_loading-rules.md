@@ -13,8 +13,8 @@ These rules guide each agent in deciding which .ai/ documents to load. Each agen
 
 Every agent starts with:
 1. `CLAUDE.md` (auto-loaded)
-2. `.ai/core/architecture.md` — understand the harness structure
-3. `.ai/core/research-context.md` — current research question and hypothesis
+2. `.ai/core/research-context.md` — current research question and hypothesis
+3. `.ai/context_chain.md` — reasoning chain across stages (read the last 2-3 entries for recent context)
 
 ## Step 2: Load by Agent Role
 
@@ -56,7 +56,12 @@ Every agent starts with:
 ### Judge Agent (all stages)
 - Load only the stage-specific outputs being evaluated
 
+### Memory Synthesizer (runs after every stage)
+- ALL `.ai/core/` and `.ai/evolution/` files
+- Stage output files (to distill into .ai/)
+- `.ai/context_chain.md` (to append new entry)
+
 ## Step 3: Budget Check
 
-- Total loaded documents per agent: ≤ 5
-- If context is too large, prioritize: research-context > methodology > literature
+- Total loaded documents per agent: ≤ 5 (excluding context_chain.md which is always loaded)
+- If context is too large, prioritize: research-context > context_chain > methodology > literature

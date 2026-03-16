@@ -50,8 +50,19 @@ run_stage() {
         echo "[$(timestamp)] Skill execution returned non-zero"
     fi
 
-    # State Guardian: verify and repair
-    echo "[$(timestamp)] State Guardian verifying $stage..."
+    # State Guardian: verify outputs exist
+    echo "[$(timestamp)] State Guardian verifying $stage outputs..."
+    python3 scripts/state_guard.py verify --stage "$stage"
+
+    # Memory Sync: consolidate knowledge into .ai/ (dedicated LLM call)
+    echo "[$(timestamp)] Memory Sync: consolidating knowledge from $stage..."
+    local mem_prompt="$(cat skills/_common.md)"$'\n\n'"$(cat skills/memory_sync.md)"$'\n\n'"Stage just completed: $stage"
+    if ! claude -p "$mem_prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep" 2>&1 | tee "state/${stage}_memory.log"; then
+        echo "[$(timestamp)] Memory sync returned non-zero (non-fatal)"
+    fi
+
+    # State Guardian: verify memory quality
+    echo "[$(timestamp)] State Guardian verifying $stage memory..."
     python3 scripts/state_guard.py verify --stage "$stage"
 
     # LLM-as-Judge: content quality evaluation

@@ -17,6 +17,7 @@ Before starting any task, read the relevant documents from `.ai/`.
 | .ai/evolution/decisions.md | All major decisions in ADR format (append-only) |
 | .ai/evolution/negative-results.md | Failed experiments — prevents repeating mistakes |
 | .ai/evolution/experiment-log.md | Brief log of every experiment run |
+| .ai/context_chain.md | Running reasoning chain across stages — the "why" thread |
 
 ## Loading Protocol
 
@@ -48,10 +49,12 @@ S6: Writing → S7: Review-Revise → S8: Delivery
 ```
 run.sh (主循环)
   ├── scripts/parse_state.py → 确定当前 stage
-  ├── claude -p "skills/_common.md + skills/S{N}.md" → 执行 stage
-  ├── scripts/state_guard.py → 验证+修复状态
+  ├── claude -p "skills/S{N}.md" → 执行 stage（产出文件）
+  ├── scripts/state_guard.py verify → 验证输出存在
+  ├── claude -p "skills/memory_sync.md" → 记忆整合（.ai/ 更新）
+  ├── scripts/state_guard.py verify → 验证记忆质量
   ├── claude -p "skills/judge.md" → LLM-as-judge 质量门控
-  └── scripts/state_guard.py → 推进/重试
+  └── scripts/state_guard.py advance → 推进/重试
 ```
 
 - **skills/** — 16 个 .md skill 文件，Claude Code native 执行

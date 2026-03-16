@@ -93,7 +93,7 @@ def verify_stage(stage: str) -> dict:
             report["checks"].append({"file": output_file, "exists": False})
             report["passed"] = False
 
-    # Check 2: .ai/ docs updated (modification time check)
+    # Check 2: .ai/ docs updated (modification time + content quality)
     expected_ai = stage_def.get("expected_ai_updates", [])
     for ai_file in expected_ai:
         path = ROOT / ai_file
@@ -102,8 +102,31 @@ def verify_stage(stage: str) -> dict:
             age_hours = (datetime.now().timestamp() - mtime) / 3600
             if age_hours > 24:
                 report["warnings"].append(f"{ai_file} not updated recently ({age_hours:.0f}h old)")
+            # Content quality check
+            content = path.read_text()
+            quality = _check_ai_content_quality(ai_file, content)
+            if quality:
+                report["warnings"].append(f"{ai_file}: {quality}")
         else:
             report["warnings"].append(f"{ai_file} does not exist")
+
+    # Check 2.5: Memory sync result
+    mem_sync_path = ROOT / "state" / "MEMORY_SYNC_RESULT.json"
+    if mem_sync_path.exists():
+        mem_result = json.loads(mem_sync_path.read_text())
+        if mem_result.get("stage") == stage:
+            report["checks"].append({"file": "memory_sync", "exists": True})
+        else:
+            report["warnings"].append("MEMORY_SYNC_RESULT.json exists but for different stage")
+
+    # Check 2.6: Context chain has entry for this stage
+    chain_path = ROOT / ".ai" / "context_chain.md"
+    if chain_path.exists():
+        chain_content = chain_path.read_text()
+        if f"## {stage}:" in chain_content:
+            report["checks"].append({"file": "context_chain_entry", "exists": True})
+        else:
+            report["warnings"].append(f"context_chain.md missing entry for {stage}")
 
     # Check 3: Registry fields
     registry_fields = stage_def.get("registry_fields", {})
@@ -203,6 +226,50 @@ def advance_stage(stage: str) -> bool:
         save_registry(reg)
         print(f"FAILED — {reasons}")
         return False
+
+
+def _check_ai_content_quality(ai_file: str, content: str) -> str | None:
+    """Check if an .ai/ file has meaningful content. Returns warning string or None."""
+    lines = [l for l in content.split("\n") if l.strip() and not l.startswith("---") and not l.startswith("#") and not l.startswith(">") and not l.startswith("<!--")]
+
+    # Skip template-only files (contain "To be filled")
+    if any("to be filled" in l.lower() for l in lines):
+        return "still contains template placeholders ('To be filled')"
+
+    # Minimum content thresholds by file type
+    if "literature.md" in ai_file:
+        if len(lines) < 10:
+            return f"too short ({len(lines)} content lines, need ≥10)"
+        # Should contain at least some paper references
+        citations = re.findall(r'\[[\w\s,]+\d{4}\]', content)
+        if len(citations) < 3:
+            return f"only {len(citations)} citations found (need ≥3)"
+
+    elif "methodology.md" in ai_file:
+        if len(lines) < 5:
+            return f"too short ({len(lines)} content lines, need ≥5)"
+        # Should explain "why" not just "what"
+        if "because" not in content.lower() and "reason" not in content.lower() and "since" not in content.lower():
+            return "missing rationale (no 'because'/'reason' found — methodology should explain WHY)"
+
+    elif "research-context.md" in ai_file:
+        if len(lines) < 3:
+            return f"too short ({len(lines)} content lines, need ≥3)"
+
+    elif "negative-results.md" in ai_file:
+        pass  # Append-only, no minimum
+
+    elif "decisions.md" in ai_file:
+        pass  # Append-only, no minimum
+
+    elif "experiment-log.md" in ai_file:
+        pass  # Append-only, no minimum
+
+    elif "context_chain.md" in ai_file:
+        if len(lines) < 3:
+            return f"too short ({len(lines)} content lines)"
+
+    return None
 
 
 def _infer_field(stage: str, field: str):
