@@ -38,10 +38,11 @@ User → Phase 0 (Direction Alignment, ~30min)
 Bash loop: reads registry.yaml, dispatches skills, runs state guard and judge, advances stages. ~80 lines.
 
 ### Skills (`skills/`)
-16 .md files — Claude Code native execution. Each is a complete instruction set:
-- `_common.md` — shared preamble (state loading, .ai/ protocol, anti-hallucination)
+17 .md files — Claude Code native execution. Each is a complete instruction set:
+- `_common.md` — shared preamble (state loading, anti-hallucination rules)
 - `P0_clarification.md`, `P0_novelty.md` — Phase 0 (interactive)
 - `S0_init.md` through `S8_delivery.md` — pipeline stages
+- `memory_sync.md` — **Memory Synthesizer**: runs after every stage, consolidates knowledge into .ai/ (executing skills do NOT update .ai/ — this skill does)
 - `judge.md` — LLM-as-judge (two-layer: deterministic + content quality)
 - `vlm_review.md` — VLM figure quality gate
 
@@ -58,10 +59,18 @@ Minimal CLI tools called by skills via Bash:
 ### State Machine (`PIPELINE.md`)
 Declarative stage definitions: expected outputs, judge criteria, timeouts, retries. Read by `state_guard.py` for verification.
 
+### Memory Layer (`.ai/` + `context_chain.md`)
+Knowledge persists across stateless `claude -p` sessions via file-based memory:
+- `.ai/core/` — curated summaries (research-context, methodology, literature)
+- `.ai/evolution/` — append-only logs (decisions, negative-results, experiment-log)
+- `.ai/context_chain.md` — running reasoning chain: each stage records what/why/what-next
+- `memory_sync.md` consolidates after each stage; `state_guard.py` validates content quality
+
 ### State Files
 - `registry.yaml` — pipeline position + per-stage status/attempts
 - `experiment_tree.json` — experiment tree with node states
 - `state/JUDGE_RESULT.json` — latest judge evaluation
+- `state/MEMORY_SYNC_RESULT.json` — memory consolidation report
 - `state/REVIEW_STATE.json` — S7 review cycle tracking
 - `state/GPU_JOBS.json` — active GPU jobs
 
@@ -75,13 +84,16 @@ Declarative stage definitions: expected outputs, judge criteria, timeouts, retri
 6. **LLM-as-judge** — two-layer (deterministic checks + content quality), replaces heuristic gates
 7. **Anti-hallucination** — every citation verified via Semantic Scholar/DBLP
 8. **AgentInfra knowledge layer** — .ai/ persists context across stages
-9. **Fully unattended after Phase 0** — sleep mode with circuit breaker for safety
+9. **Memory Synthesizer** — dedicated skill consolidates .ai/ after each stage (executing skills don't update memory)
+10. **Context Chain** — `.ai/context_chain.md` captures reasoning thread across stateless sessions
+11. **Fully unattended after Phase 0** — sleep mode with circuit breaker for safety
 
 ## Changelog
 
 ### 2026-03-16 — v2 rewrite
 - Replaced Python orchestrator with `run.sh` + .md skills
 - Added State Guardian for reliable state progression
+- Added Memory Synthesizer + context chain for cross-stage knowledge
 - Added cross-model adversarial review (ARIS pattern)
 - Added multi-perspective debate (Sibyl pattern)
 - Added LLM-as-judge replacing heuristic checks

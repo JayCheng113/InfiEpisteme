@@ -110,16 +110,30 @@ InfiEpisteme/
 
 ## Key Design Decisions
 
+### Memory System (solving stateless sessions)
+
+Each `claude -p` call is completely stateless — no conversation history. Memory is reconstructed from files via a three-layer architecture:
+
+```
+Layer 1: State (YAML/JSON)          — registry.yaml, experiment_tree.json
+Layer 2: Knowledge (.ai/ markdown)  — distilled summaries, decisions, negative results
+Layer 3: Context Chain              — .ai/context_chain.md: the "why" thread across stages
+```
+
+**Key innovation**: Executing skills do NOT update `.ai/` files. A dedicated **Memory Synthesizer** (`skills/memory_sync.md`) runs after every stage to read outputs and consolidate knowledge. This separation of concerns ensures memory quality — inspired by [Google's Always On Memory Agent](https://github.com/nicholasgoulet/memory-agent) consolidation pattern.
+
+The pipeline loop is: `execute → verify → memory_sync → verify_memory → judge → advance`
+
 ### State Guardian
 
-Claude Code sometimes misses state updates when executing skills. `scripts/state_guard.py` runs after every skill execution to verify and repair:
+`scripts/state_guard.py` runs after every skill to verify and repair state:
 
 - Expected output files exist?
 - `registry.yaml` fields correctly updated?
-- `experiment_tree.json` node states consistent?
-- `.ai/` documents maintained?
+- `.ai/` content quality (min length, citations present, rationale included)?
+- `context_chain.md` has entry for current stage?
 
-This is deterministic Python, not LLM — it provides reliable state guarantees that complement the LLM-as-judge content quality checks.
+Deterministic Python, not LLM — complements the LLM-as-judge content quality checks.
 
 ### Cross-Model Adversarial Review
 
