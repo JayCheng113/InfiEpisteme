@@ -17,10 +17,10 @@ get_timeout() {
         S2) echo 900 ;;       # 15m
         S3) echo 1800 ;;      # 30m
         S4) echo 7200 ;;      # 120m (full S4, used as outer limit)
-        S4.1) echo 2400 ;;    # 40m per sub-stage
-        S4.2) echo 1800 ;;    # 30m
-        S4.3) echo 1800 ;;    # 30m
-        S4.4) echo 1200 ;;    # 20m
+        S4.1) echo 10800 ;;   # 180m — root nodes need many training runs
+        S4.2) echo 5400 ;;    # 90m — hyperparameter tuning
+        S4.3) echo 5400 ;;    # 90m — method refinement
+        S4.4) echo 3600 ;;    # 60m — ablation studies
         S5) echo 900 ;;       # 15m
         S6) echo 1500 ;;      # 25m
         S7) echo 1800 ;;      # 30m
@@ -104,7 +104,7 @@ run_skill_execution() {
     local judge_prompt
     judge_prompt="$(build_prompt skills/judge.md)"
     judge_prompt="$judge_prompt"$'\n\n'"Current stage to judge: $guard_stage (sub-stage: $stage_label)"
-    if ! claude -p "$judge_prompt" --allowedTools "Bash,Read,Glob,Grep" 2>&1 | tee "state/${stage_label}_judge.log"; then
+    if ! claude -p "$judge_prompt" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/${stage_label}_judge.log"; then
         echo "[$(timestamp)] Judge execution returned non-zero"
     fi
 
