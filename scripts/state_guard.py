@@ -259,8 +259,8 @@ def _run_content_checks(stage: str, report: dict):
         rw_path = ROOT / "RELATED_WORK.md"
         if rw_path.exists():
             content = rw_path.read_text()
-            # Count citation patterns: [Author, Year] or \cite{key} style
-            bracket_cites = set(re.findall(r'\[[\w\s,]+\d{4}\]', content))
+            # Count citation patterns: [Author, Year], [Author et al., Year] or \cite{key} style
+            bracket_cites = set(re.findall(r'\[[A-Z][\w\s.,&]+\d{4}\]', content))
             latex_cites = set(re.findall(r'\\cite[tp]?\{([^}]+)\}', content))
             # Expand comma-separated \cite{a,b,c}
             expanded_latex = set()
@@ -540,7 +540,7 @@ def _infer_field(stage: str, field: str):
         rw_path = ROOT / "RELATED_WORK.md"
         if rw_path.exists():
             content = rw_path.read_text()
-            citations = re.findall(r'\[[\w\s]+,\s*\d{4}\]', content)
+            citations = re.findall(r'\[[A-Z][\w\s.,&]+\d{4}\]', content)
             return len(set(citations))
     if stage == "S1" and field == "baselines_identified":
         bl_path = ROOT / "BASELINES.md"
