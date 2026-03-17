@@ -44,6 +44,37 @@ timestamp() {
     date "+%H:%M:%S"
 }
 
+run_claude_with_retry() {
+    # Wraps `claude -p` with retry logic for transient API 500 errors.
+    # Usage: run_claude_with_retry <output_log> <claude_args...>
+    # Returns non-zero if all retries exhausted.
+    local output_log="$1"; shift
+    local max_attempts=3
+    local backoffs=(30 60 120)
+    local attempt=0
+
+    while [ $attempt -lt $max_attempts ]; do
+        attempt=$((attempt + 1))
+
+        claude "$@" 2>&1 | tee "$output_log"
+        local rc=${PIPESTATUS[0]}
+
+        # Check for API 5xx errors or empty output
+        if [ $rc -eq 0 ] && [ -s "$output_log" ] && ! grep -q "API Error: 5" "$output_log"; then
+            return 0
+        fi
+
+        if [ $attempt -lt $max_attempts ]; then
+            local wait=${backoffs[$((attempt - 1))]}
+            echo "[$(timestamp)] WARNING: claude call failed (attempt $attempt/$max_attempts). Retrying in ${wait}s..."
+            sleep "$wait"
+        fi
+    done
+
+    echo "[$(timestamp)] ERROR: claude call failed after $max_attempts attempts."
+    return 1
+}
+
 build_prompt_file() {
     # Build prompt into a temp file: _common.md + given skill file(s)
     # Returns path to temp file (caller must clean up)
@@ -86,7 +117,7 @@ run_skill_execution() {
     echo "[$(timestamp)] Executing skill for $stage_label..."
     local stage_timeout
     stage_timeout=$(get_timeout "$stage_label")
-    if ! timeout "$stage_timeout" claude -p "$(cat "$prompt_file")" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent" 2>&1 | tee "state/${stage_label}_output.log"; then
+    if ! timeout "$stage_timeout" run_claude_with_retry "state/${stage_label}_output.log" -p "$(cat "$prompt_file")" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent"; then
         echo "[$(timestamp)] Skill execution returned non-zero"
     fi
     rm -f "$prompt_file"
@@ -194,7 +225,7 @@ run_hardware_detection() {
     echo "[$(timestamp)] Detecting hardware capabilities..."
     local hw_file
     hw_file="$(build_prompt_file skills/S0_hardware.md)"
-    if ! claude -p "$(cat "$hw_file")" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/hardware_detect.log"; then
+    if ! run_claude_with_retry "state/hardware_detect.log" -p "$(cat "$hw_file")" --allowedTools "Bash,Read,Write,Glob,Grep"; then
         echo "[$(timestamp)] Hardware detection returned non-zero (non-fatal, continuing)"
     fi
     rm -f "$hw_file"

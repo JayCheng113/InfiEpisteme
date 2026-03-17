@@ -55,11 +55,11 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
 3. **For each root node**, execute the experiment:
 
    **Via SSH MCP** (if `config.yaml` has `mcp.ssh_remote: true`):
-   - Use `mcp__ssh__execute_command` to submit: `nohup python3 src/method/train.py --config configs/{id}.yaml > results/{id}/logs/train.log 2>&1 &`
+   - Use `mcp__ssh__execute_command` to submit: `nohup python3 src/train.py --config configs/{id}.yaml > results/{id}/logs/train.log 2>&1 &`
    - Poll via `mcp__ssh__execute_command`: `cat results/{id}/metrics.json 2>/dev/null`
 
    **Via Python scripts** (fallback):
-   - Submit GPU job: `python3 scripts/gpu_submit.py --node {id} --script src/method/train.py --config configs/{id}.yaml`
+   - Submit GPU job: `python3 scripts/gpu_submit.py --node {id} --script src/train.py --config configs/{id}.yaml`
    - Poll for completion: `python3 scripts/gpu_poll.py --node {id}`
 
    - If poll returns success: read `results/{node_id}/metrics.json`

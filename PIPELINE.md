@@ -110,8 +110,7 @@ registry_fields:
 
 ```yaml
 expected_outputs:
-  - src/method/
-  - src/baselines/
+  - src/models/
   - src/evaluation/
   - requirements.txt
   - README_code.md

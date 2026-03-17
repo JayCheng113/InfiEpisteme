@@ -30,44 +30,57 @@ CC:  [searches web, finds paper, identifies 5 competing methods]
 | Monitor scripts manually | CC watches for risks proactively |
 | Restart from scratch on failure | CC retries, hotfixes, resumes |
 
-**Key advantage**: Your local Claude Code acts as mission control — it SSHs to your GPU server, runs the pipeline, monitors every stage, catches problems before they cascade, fixes bugs in real-time, and reports back in plain language.
+**Key advantage**: You command one local Claude Code, which commands multiple Claude Code instances on the server. A chain of command — from natural language to autonomous research.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  YOUR LOCAL MACHINE                                                 │
-│                                                                     │
-│  You ←→ Claude Code (mission control)                               │
-│         │                                                           │
-│         │  • Searches web for papers                                │
-│         │  • Predicts risks per stage                               │
-│         │  • Diagnoses failures                                     │
-│         │  • Hotfixes code, pushes to GitHub                        │
-│         │  • Reports progress in plain language                     │
-│         │                                                           │
-│         │          SSH                                               │
-└─────────┼───────────────────────────────────────────────────────────┘
-          │
-          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  GPU SERVER                                                         │
-│                                                                     │
-│  run.sh ─── for each stage ──────────────────────────────┐         │
-│       │                                                   │         │
-│       ├─→ claude -p "skills/S{N}.md"    Execute skill     │         │
-│       ├─→ state_guard.py verify         Validate output   │ repeat  │
-│       ├─→ claude -p "memory_sync.md"    Consolidate .ai/  │         │
-│       ├─→ claude -p "judge.md"          Quality gate      │         │
-│       └─→ state_guard.py advance        Next stage ───────┘         │
-│                                                                     │
-│  Pipeline: P0 → S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8     │
-│            ▲         lit   idea  code  exp   anal write rev  ship   │
-│            │                                                        │
-│       hardware                                                      │
-│       detection                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+                          ┌─────────┐
+                          │   You   │
+                          └────┬────┘
+                               │ natural language
+                               ▼
+               ┌───────────────────────────────┐
+               │  Local Claude Code             │
+               │  (mission control)             │
+               │                                │
+               │  • Web search for papers       │
+               │  • Risk prediction per stage   │
+               │  • Diagnose & hotfix bugs      │
+               │  • Push fixes to GitHub        │
+               │  • Report progress to you      │
+               └───────────────┬───────────────┘
+                               │ SSH
+                               ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  GPU SERVER                                                      │
+│                                                                  │
+│  run.sh orchestrates multiple claude -p instances:               │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ Claude Code   │  │ Claude Code   │  │ Claude Code   │         │
+│  │ (S1 skill)    │  │ (memory sync) │  │ (judge)       │         │
+│  │              │  │              │  │              │          │
+│  │ Searches lit, │  │ Reads outputs,│  │ Evaluates    │          │
+│  │ writes papers │  │ updates .ai/ │  │ quality,     │          │
+│  │ & baselines   │  │ knowledge    │  │ pass/fail    │          │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
+│         │                 │                  │                   │
+│         ▼                 ▼                  ▼                   │
+│  ┌─────────────────────────────────────────────────────┐        │
+│  │  Shared File System                                  │        │
+│  │  registry.yaml │ .ai/ │ experiment_tree.json │ src/ │        │
+│  └─────────────────────────────────────────────────────┘        │
+│                                                                  │
+│  Each stage cycle:                                               │
+│  skill CC → state_guard.py → memory CC → judge CC → advance     │
+│                                                                  │
+│  P0 → S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8            │
+│       init  lit  idea  code  exp  anal write  rev  ship          │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+**The chain of command**: You give one instruction in natural language → your local CC breaks it into actions → each action spawns a dedicated CC instance on the server (one for the skill, one for memory sync, one for judging) → they coordinate through shared files → local CC monitors results and intervenes when needed.
 
 ### .md Files Are the Program
 

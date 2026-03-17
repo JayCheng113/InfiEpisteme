@@ -98,8 +98,7 @@ pip install -r requirements.txt
 python src/evaluation/evaluate.py --method ours --config configs/best.yaml
 
 ## Repository Structure
-- `code/src/method/` — proposed method implementation
-- `code/src/baselines/` — baseline implementations
+- `code/src/models/` — method and baseline implementations
 - `code/src/evaluation/` — evaluation scripts
 - `code/configs/` — experiment configurations
 - `results/` — key experimental results

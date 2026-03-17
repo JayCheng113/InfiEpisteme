@@ -58,8 +58,7 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] Multi-perspective debate is documented (6 viewpoints)
 
 #### S3 — Implementation
-- [ ] `src/method/` directory exists with files
-- [ ] `src/baselines/` directory exists with files
+- [ ] `src/models/` directory exists with method and baseline implementations
 - [ ] `src/evaluation/` directory exists with evaluate.py
 - [ ] `requirements.txt` exists
 - [ ] `README_code.md` exists

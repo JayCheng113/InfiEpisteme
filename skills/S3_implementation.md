@@ -71,7 +71,7 @@ src/
 ### Step 3: Implement Baselines
 
 For each baseline in BASELINES.md:
-1. Create `src/baselines/{baseline_name}.py`
+1. Create `src/models/{baseline_name}.py`
 2. Implement the method following the paper description
 3. If open-source code is available (noted in BASELINES.md), reference it
 4. Create a run script or entry point
@@ -82,7 +82,7 @@ For each baseline in BASELINES.md:
 
 For each root node in experiment_tree.json:
 1. Read the node's `approach` and `key_difference` fields
-2. Create `src/method/{node_id}.py` or organize by hypothesis
+2. Create `src/models/{node_id}.py` or organize by hypothesis
 3. Implement the method as described
 4. Ensure it follows the same interface as baselines (same input/output format)
 5. Run on a small subset to verify execution
@@ -142,10 +142,10 @@ Ensure `requirements.txt` includes all ML dependencies:
 pip install -r requirements.txt
 
 ## Running Baselines
-python src/baselines/{name}.py --config configs/{name}.yaml
+python src/models/{name}.py --config configs/{name}.yaml
 
 ## Running Proposed Methods
-python src/method/{name}.py --config configs/{node_id}.yaml
+python src/models/{name}.py --config configs/{node_id}.yaml
 
 ## Evaluation
 python src/evaluation/evaluate.py --method {name} --config configs/{name}.yaml
@@ -160,7 +160,7 @@ For each root node, update:
 ```json
 {
   "status": "runnable" | "buggy",
-  "code_path": "src/method/{file}.py",
+  "code_path": "src/models/{file}.py",
   "config_path": "configs/{node_id}.yaml",
   "verified": true | false,
   "verification_notes": "runs without errors on small test"
@@ -171,8 +171,7 @@ For each root node, update:
 
 | File | Action |
 |------|--------|
-| `src/method/` | Create method implementations |
-| `src/baselines/` | Create baseline implementations |
+| `src/models/` | Create method and baseline implementations |
 | `src/evaluation/` | Create evaluation harness |
 | `src/utils/` | Create shared utilities |
 | `requirements.txt` | Update with ML dependencies |
