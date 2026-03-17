@@ -358,92 +358,93 @@ For **cutting-edge topics** (papers released days ago, novel combinations), the 
 
 ### Conversation Template
 
-Below is a real conversation flow from our first supervised run. Copy this pattern:
+Below is a real conversation flow from our first supervised run (studying Kimi's Attention Residuals, a paper released 2 days prior). Copy this pattern:
 
 ---
 
 **Phase 0: Setup & Direction**
 
 ```
-You: 我的服务器是 ubuntu@129.146.162.231，上面有 A100。
-     帮我在上面 clone InfiEpisteme 并配置好。
+You: My server is ubuntu@129.146.162.231 with an A100.
+     Clone InfiEpisteme and set it up there.
 
 CC:  [SSHs to server, clones repo, checks hardware]
      Done. A100-40GB, 216GB RAM, CUDA 12.8.
-     研究方向是什么？
+     What's your research direction?
 
-You: 研究 Kimi 最近提出的 Attention Residue，验证在 3B LLM 下的性能，
-     然后提出改进方案。目标 NeurIPS 2026。cross_review 用 gpt-5.4。
+You: Study Kimi's recently proposed Attention Residuals, validate
+     performance on 3B LLMs, and propose improvements.
+     Target NeurIPS 2026. Use gpt-5.4 for cross_review.
 
 CC:  [searches web for AttnRes paper — finds arxiv:2603.15031, 2 days old]
      [identifies 5 competing methods: DCA, MUDDFormer, Hyper-Connections...]
      [writes config.yaml and RESEARCH_PROPOSAL.md on server]
 
-     ⚠️ 风险预警:
-     1. 论文仅 2 天前发布，Semantic Scholar 大概率没收录
-     2. S1 的 30 篇引用要求需要扩展到 residual connections 整个领域
-     3. 0.5B 模型更现实 — 80 GPU-hours 只够 6 次训练
+     Risk warnings:
+     1. Paper released only 2 days ago — Semantic Scholar likely hasn't indexed it
+     2. S1's 30-paper requirement needs broadening to residual connections field
+     3. 0.5B model is more realistic — 80 GPU-hours only allows ~6 training runs
 
-You: 反正做个小型验证就行，0.5B 或 1.5B 你自己评估。
+You: A small-scale validation is fine. 0.5B or 1.5B, your call.
 
 CC:  [adjusts proposal to 0.5B scale, 5-10B tokens per run]
      [executes P0 novelty check — finds direction is "Partially Novel"]
-     P0 完成，推进到 S0。
+     P0 complete, advancing to S0.
 ```
 
 **Phase 1: Supervised Execution**
 
 ```
 CC:  [executes S0 init, S1 literature survey on server]
-     S1 完成但 state guard 报错：只检测到 21 citations，需要 30。
+     S1 finished but state guard reports error: only detected 21 citations, need 30.
 
-     诊断：引用格式是 [Author et al., 2024]，但 state_guard.py 的
-     正则不匹配 "et al." 中的点号。
+     Diagnosis: citations use [Author et al., 2024] format, but state_guard.py
+     regex doesn't match the dot in "et al."
 
      [fixes regex locally, pushes to GitHub, syncs to server]
      [runs supplementary search to add 15 more papers]
-     重新验证：6/6 checks passed. 推进到 S2。
+     Re-verified: 6/6 checks passed. Advancing to S2.
 
-You: 本地的修复推送了吗？
+You: Did you push the local fix?
 
-CC:  已推送 (commit 27d15fe)。
+CC:  Already pushed (commit 27d15fe).
 ```
 
 **Phase 2: Ongoing Monitoring**
 
 ```
-You: 现在到哪了？
+You: What's the status?
 
 CC:  [checks registry.yaml on server]
-     S2 Ideation 完成。生成了 2 个假设、6 个实验节点。
-     S3 Implementation 正在执行中...
+     S2 Ideation complete. Generated 2 hypotheses, 6 experiment nodes.
+     S3 Implementation is running...
 
-You: S4 实验的时候注意 GPU 内存，0.5B 用 bf16 应该够。
+You: Watch GPU memory during S4. 0.5B with bf16 should fit.
 
-CC:  收到，我会在 S4 开始前检查 hardware_profile.json
-     并确保 batch size 设置合理。
+CC:  Got it. I'll check hardware_profile.json before S4 starts
+     and ensure batch sizes are reasonable.
 
      ...
 
-CC:  S4.1 完成，3/6 节点成功。有一个 OOM 了 —
-     batch_size=64 太大。我已经改成 32 并重跑。
+CC:  S4.1 done, 3/6 nodes succeeded. One OOM'd —
+     batch_size=64 too large. Already changed to 32 and rerunning.
 ```
 
 **Phase 3: Intervention**
 
 ```
-You: 我看了实验结果，H2 的方向不太对。能换成 ... 吗？
+You: I looked at the results, H2's direction seems wrong. Can you change it to...?
 
 CC:  [reads experiment_tree.json, updates H2 nodes]
      [resets S4 judge result, re-runs affected sub-stage]
-     已调整，新方向的节点已提交。
+     Adjusted. New direction nodes committed.
 
-You: 论文引用太少了，而且没有近期的。
+You: The paper has too few citations and nothing recent.
 
-CC:  [diagnoses: S6 只引了 21 篇，没有 2025-2026 的]
+CC:  [diagnoses: S6 only cited 21 papers, no 2025-2026 papers]
      [adds citation count enforcement to state_guard.py]
      [runs targeted supplement search for recent papers]
-     修复完成并推送。
+     Fixed and pushed.
 ```
 
 ### Risk Prediction Checklist
@@ -452,25 +453,25 @@ Before each stage, tell CC to watch for these:
 
 | Stage | Risk Signal | What to Tell CC |
 |-------|------------|-----------------|
-| **S1** | Paper < 6 months old | "这篇论文很新，Semantic Scholar 可能搜不到，用 WebSearch 兜底" |
-| **S1** | Niche topic | "这个方向论文不多，可能凑不够 30 篇，扩展到相关领域" |
-| **S2** | Limited hardware | "注意实验方案要在 80 GPU-hours 内可行" |
-| **S3** | No reference code | "原论文没开源代码，S3 可能要从头实现，预留调试时间" |
-| **S4** | Budget overrun | "监控 GPU 使用时间，快超预算时提前停" |
-| **S6** | Citation issues | "检查引用数量和格式，上次出过正则不匹配的 bug" |
-| **S7** | API key missing | "确认 OPENAI_API_KEY 已设置，否则 cross-review 会失败" |
+| **S1** | Paper < 6 months old | "This paper is very new, Semantic Scholar may not have it. Use WebSearch as fallback." |
+| **S1** | Niche topic | "Not many papers in this area. May not reach 30 — broaden to related fields." |
+| **S2** | Limited hardware | "Make sure experiments fit within 80 GPU-hours budget." |
+| **S3** | No reference code | "Original paper has no open-source code. S3 may need to implement from scratch." |
+| **S4** | Budget overrun | "Monitor GPU usage. Stop early if approaching budget." |
+| **S6** | Citation issues | "Check citation count and format. We had a regex mismatch bug before." |
+| **S7** | API key missing | "Confirm OPENAI_API_KEY is set, or cross-review will fail." |
 
 ### Key Phrases for CC
 
 | You Say | CC Does |
 |---------|---------|
-| "在服务器上运行 pipeline" | SSH to server, configure, start execution |
-| "现在到哪了" | Reads registry.yaml, reports status |
-| "这个阶段有什么风险" | Analyzes research topic vs pipeline requirements |
-| "修复推送了吗" | Checks git status, commits, pushes |
-| "停掉，我要改方向" | Kills processes, resets stage |
-| "继续" | Resumes from current stage |
-| "把本地修复同步到服务器" | rsync or git pull on server |
+| "Run the pipeline on the server" | SSH to server, configure, start execution |
+| "What's the status?" | Reads registry.yaml, reports current stage and progress |
+| "What are the risks for this stage?" | Analyzes research topic vs pipeline requirements, flags issues |
+| "Did you push the fix?" | Checks git status, commits, pushes to GitHub |
+| "Stop, I want to change direction" | Kills processes, resets stage, waits for new instructions |
+| "Continue" | Resumes from current stage |
+| "Sync local fixes to server" | rsync updated files or git pull on server |
 
 ## Safety Mechanisms
 
