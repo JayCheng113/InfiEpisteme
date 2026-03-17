@@ -44,16 +44,22 @@ timestamp() {
     date "+%H:%M:%S"
 }
 
-build_prompt() {
-    # Build prompt: _common.md + given skill file(s) + optional suffix
-    local prompt=""
+build_prompt_file() {
+    # Build prompt into a temp file: _common.md + given skill file(s)
+    # Returns path to temp file (caller must clean up)
+    local tmpfile
+    tmpfile=$(mktemp "${TMPDIR:-/tmp}/infi_prompt_XXXXXX.md")
     if [ -f skills/_common.md ]; then
-        prompt="$(cat skills/_common.md)"$'\n\n'
+        cat skills/_common.md >> "$tmpfile"
+        printf '\n\n' >> "$tmpfile"
     fi
     for f in "$@"; do
-        [ -f "$f" ] && prompt="$prompt$(cat "$f")"$'\n\n'
+        if [ -f "$f" ]; then
+            cat "$f" >> "$tmpfile"
+            printf '\n\n' >> "$tmpfile"
+        fi
     done
-    echo "$prompt"
+    echo "$tmpfile"
 }
 
 run_skill_execution() {
@@ -71,16 +77,19 @@ run_skill_execution() {
         skill_files+=("$1"); shift
     done
 
-    local prompt
-    prompt="$(build_prompt "${skill_files[@]}")"
-    [ -n "$suffix" ] && prompt="$prompt"$'\n\n'"$suffix"
+    local prompt_file
+    prompt_file="$(build_prompt_file "${skill_files[@]}")"
+    if [ -n "$suffix" ]; then
+        printf '\n\n%s' "$suffix" >> "$prompt_file"
+    fi
 
     echo "[$(timestamp)] Executing skill for $stage_label..."
     local stage_timeout
     stage_timeout=$(get_timeout "$stage_label")
-    if ! timeout "$stage_timeout" claude -p "$prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent" 2>&1 | tee "state/${stage_label}_output.log"; then
+    if ! timeout "$stage_timeout" claude -p "$(cat "$prompt_file")" --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent" 2>&1 | tee "state/${stage_label}_output.log"; then
         echo "[$(timestamp)] Skill execution returned non-zero"
     fi
+    rm -f "$prompt_file"
 
     # State Guardian: verify outputs exist
     echo "[$(timestamp)] State Guardian verifying $guard_stage outputs..."
@@ -88,12 +97,13 @@ run_skill_execution() {
 
     # Memory Sync: consolidate knowledge
     echo "[$(timestamp)] Memory Sync: consolidating knowledge from $stage_label..."
-    local mem_prompt
-    mem_prompt="$(build_prompt skills/memory_sync.md)"
-    mem_prompt="$mem_prompt"$'\n\n'"Stage just completed: $stage_label"
-    if ! claude -p "$mem_prompt" --allowedTools "Bash,Read,Write,Edit,Glob,Grep" 2>&1 | tee "state/${stage_label}_memory.log"; then
+    local mem_file
+    mem_file="$(build_prompt_file skills/memory_sync.md)"
+    printf '\n\nStage just completed: %s' "$stage_label" >> "$mem_file"
+    if ! claude -p "$(cat "$mem_file")" --allowedTools "Bash,Read,Write,Edit,Glob,Grep" 2>&1 | tee "state/${stage_label}_memory.log"; then
         echo "[$(timestamp)] Memory sync returned non-zero (non-fatal)"
     fi
+    rm -f "$mem_file"
 
     # State Guardian: verify memory quality
     echo "[$(timestamp)] State Guardian verifying $guard_stage memory..."
@@ -101,12 +111,13 @@ run_skill_execution() {
 
     # LLM-as-Judge: content quality evaluation
     echo "[$(timestamp)] Running judge gate for $stage_label..."
-    local judge_prompt
-    judge_prompt="$(build_prompt skills/judge.md)"
-    judge_prompt="$judge_prompt"$'\n\n'"Current stage to judge: $guard_stage (sub-stage: $stage_label)"
-    if ! claude -p "$judge_prompt" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/${stage_label}_judge.log"; then
+    local judge_file
+    judge_file="$(build_prompt_file skills/judge.md)"
+    printf '\n\nCurrent stage to judge: %s (sub-stage: %s)' "$guard_stage" "$stage_label" >> "$judge_file"
+    if ! claude -p "$(cat "$judge_file")" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/${stage_label}_judge.log"; then
         echo "[$(timestamp)] Judge execution returned non-zero"
     fi
+    rm -f "$judge_file"
 
     # State Guardian: advance or fail based on judge result
     echo "[$(timestamp)] Evaluating judge result..."
@@ -181,14 +192,12 @@ run_stage() {
 
 run_hardware_detection() {
     echo "[$(timestamp)] Detecting hardware capabilities..."
-    local hw_prompt=""
-    if [ -f skills/_common.md ]; then
-        hw_prompt="$(cat skills/_common.md)"$'\n\n'
-    fi
-    hw_prompt="$hw_prompt$(cat skills/S0_hardware.md)"
-    if ! claude -p "$hw_prompt" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/hardware_detect.log"; then
+    local hw_file
+    hw_file="$(build_prompt_file skills/S0_hardware.md)"
+    if ! claude -p "$(cat "$hw_file")" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/hardware_detect.log"; then
         echo "[$(timestamp)] Hardware detection returned non-zero (non-fatal, continuing)"
     fi
+    rm -f "$hw_file"
     if [ -f "hardware_profile.json" ]; then
         echo "[$(timestamp)] Hardware profile created successfully."
     else
