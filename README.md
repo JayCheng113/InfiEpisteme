@@ -348,6 +348,179 @@ Before delivery, S8 verifies the paper against venue-specific requirements:
 - **ACL**: Limitations section (required), bias/fairness
 - **Generic**: Standard ML paper quality checks
 
+## Local CC Supervision Workflow
+
+The most effective way to run InfiEpisteme is **local Claude Code supervising a remote pipeline**. Your local CC acts as a mission controller: configuring, launching, monitoring risk, catching failures, hotfixing, and resuming — all through SSH.
+
+### Why Not Just `./run.sh start` on the Server?
+
+Running the pipeline unattended works for well-established research directions. But for **cutting-edge topics** (papers released days ago, novel combinations, under-explored areas), the pipeline will hit problems that require real-time judgment:
+
+- Literature search APIs haven't indexed the target paper yet
+- Citation count thresholds fail because the field is too new
+- State guard regex doesn't match the citation format the LLM chose
+- Experiment designs exceed hardware budget
+- Judge criteria are too strict/lenient for the specific domain
+
+Local CC supervision catches these **within minutes** instead of discovering them after 3 failed retries and a paused pipeline.
+
+### The Workflow
+
+```
+Local Machine (Claude Code)                    Remote GPU Server
+┌──────────────────────────────┐              ┌──────────────────────────┐
+│                              │              │                          │
+│  1. Configure & Launch       │              │                          │
+│     ssh server "cd project   │──────────────│  config.yaml written     │
+│     && cat > config.yaml"    │              │  registry.yaml reset     │
+│                              │              │                          │
+│  2. Execute Stage            │              │                          │
+│     ssh server "claude -p    │──────────────│  claude -p runs skill    │
+│     '$(cat skills/S{N}.md)'" │              │  produces outputs        │
+│                              │              │                          │
+│  3. Verify & Monitor         │              │                          │
+│     ssh server "python3      │──────────────│  state_guard.py verify   │
+│     scripts/state_guard.py   │              │  returns pass/fail       │
+│     verify --stage S{N}"     │◄─────────────│                          │
+│                              │              │                          │
+│  4. Risk Detection           │              │                          │
+│     "Only 21 citations,      │              │                          │
+│      need 30. The regex      │              │                          │
+│      doesn't match 'et al.'" │              │                          │
+│                              │              │                          │
+│  5. Hotfix & Retry           │              │                          │
+│     Fix state_guard.py       │              │                          │
+│     locally, push to GitHub, │──────────────│  rsync fixed script      │
+│     rsync to server          │              │  re-verify: PASSED       │
+│                              │              │                          │
+│  6. Judge & Advance          │              │                          │
+│     ssh server "python3      │──────────────│  advance to next stage   │
+│     scripts/state_guard.py   │◄─────────────│                          │
+│     advance --stage S{N}"    │              │                          │
+│                              │              │                          │
+│  7. Repeat from step 2       │              │                          │
+└──────────────────────────────┘              └──────────────────────────┘
+```
+
+### Step-by-Step Commands
+
+**1. Setup & Launch**
+```bash
+# SSH to server, configure project
+ssh user@gpu-server "cd ~/project && cat > config.yaml << 'EOF'
+research_direction: "your direction"
+target_venue: "NeurIPS 2026"
+...
+EOF"
+
+# Set stage to running
+ssh user@gpu-server "cd ~/project && python3 scripts/update_state.py set_running S1"
+```
+
+**2. Execute a Stage**
+```bash
+# Run skill via claude -p (pipe prompt from skill files)
+ssh -o ServerAliveInterval=60 user@gpu-server \
+  "cd ~/project && timeout 1200 claude -p \"\$(cat skills/_common.md)
+\$(cat skills/S1_literature.md)\" \
+  --allowedTools 'Bash,Read,Write,Edit,Glob,Grep,WebSearch,Agent' \
+  2>&1 | tee state/S1_output.log | tail -80"
+```
+
+For long-running stages, run in background:
+```bash
+# Use Bash tool with run_in_background=true, then check later
+ssh user@gpu-server "nohup claude -p '...' > state/S4_output.log 2>&1 &"
+```
+
+**3. Verify**
+```bash
+ssh user@gpu-server "cd ~/project && python3 scripts/state_guard.py verify --stage S1"
+# Output: Guard: 6/6 checks passed, 0 repairs, 1 warnings
+```
+
+**4. Diagnose Failures**
+```bash
+# Check what went wrong
+ssh user@gpu-server "cd ~/project && cat state/GUARD_RESULT.json"
+
+# Read the output files to understand the issue
+ssh user@gpu-server "cd ~/project && head -40 RELATED_WORK.md"
+
+# Count citations manually to verify
+ssh user@gpu-server "cd ~/project && grep -oP '\[[A-Z][\w\s.,&]+\d{4}\]' RELATED_WORK.md | sort -u | wc -l"
+```
+
+**5. Hotfix Locally, Push, Sync**
+```bash
+# Fix the bug in your local repo
+# Edit scripts/state_guard.py locally
+
+# Push to GitHub
+git add scripts/state_guard.py && git commit -m "fix: citation regex" && git push
+
+# Sync to server
+rsync -az scripts/state_guard.py user@gpu-server:~/project/scripts/
+```
+
+**6. Supplement & Retry**
+```bash
+# If outputs are insufficient, run a targeted supplement
+ssh user@gpu-server "cd ~/project && timeout 600 claude -p \
+  'Read RELATED_WORK.md. It has only 21 citations, need 30+. Add 10 more papers covering: ...' \
+  --allowedTools 'Bash,Read,Write,Edit,WebSearch' 2>&1 | tail -20"
+
+# Re-verify
+ssh user@gpu-server "cd ~/project && python3 scripts/state_guard.py verify --stage S1"
+```
+
+**7. Judge & Advance**
+```bash
+# Write judge result (or run claude -p with judge.md)
+ssh user@gpu-server "cd ~/project && python3 scripts/state_guard.py advance --stage S1"
+# Output: PASSED — advanced to S2
+```
+
+### Risk Prediction Checklist
+
+Before each stage, anticipate problems based on your research topic:
+
+| Stage | Risk Signal | What to Watch |
+|-------|------------|---------------|
+| **S1** | Paper < 6 months old | Semantic Scholar won't have it. Use `WebSearch` fallback. Broaden to related fields for 30-paper quota. |
+| **S1** | Niche topic | May not reach 30 papers. Document search queries tried; threshold can be manually lowered. |
+| **S2** | Limited hardware | Check that proposed experiments fit in GPU-hours budget. 0.5B model × 5B tokens ≈ 13hrs on A100-40GB. |
+| **S3** | No reference implementation | If the paper has no code release, S3 will take longer and may produce bugs. Plan for debugging time. |
+| **S4** | Budget overrun | Monitor `experiment_tree.json` GPU-hours. Kill early if approaching budget. |
+| **S4** | experiment_tree.json not updated | Known issue: LLM sometimes forgets to update node status. Check manually after each sub-stage. |
+| **S6** | Citation format mismatch | `state_guard.py` regex must match the format S6 uses. Verify with `grep` before relying on automated checks. |
+| **S7** | Cross-review API failure | If `OPENAI_API_KEY` not set or model unavailable, S7 falls back to self-review. Check logs. |
+
+### Monitoring Commands Cheat Sheet
+
+```bash
+# Pipeline status
+ssh user@gpu-server "cd ~/project && cat registry.yaml | head -15"
+
+# Current stage output (live tail)
+ssh user@gpu-server "cd ~/project && tail -50 state/S{N}_output.log"
+
+# Last judge result
+ssh user@gpu-server "cd ~/project && cat state/JUDGE_RESULT.json | python3 -m json.tool"
+
+# GPU usage
+ssh user@gpu-server "nvidia-smi"
+
+# Experiment progress
+ssh user@gpu-server "cd ~/project && python3 -c \"
+import json; t=json.load(open('experiment_tree.json'))
+for n in t.get('nodes',[]): print(f'{n[\"id\"]:15s} {n[\"status\"]:10s} {n.get(\"results\",{}).get(\"primary_metric\",\"\")}')
+\""
+
+# Git log (verify pre-registration)
+ssh user@gpu-server "cd ~/project && git log --oneline -10"
+```
+
 ## Safety Mechanisms
 
 | Mechanism | Purpose |
