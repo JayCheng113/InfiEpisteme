@@ -164,8 +164,8 @@ def verify_stage(stage: str) -> dict:
                             f"Node {node['id']} claims complete but {node['results_path']} missing"
                         )
 
-            # S2 check: >= 6 nodes
-            if stage == "S3" and len(nodes) < 6:
+            # S2 check: >= 6 nodes (verified at S2, not S3)
+            if stage == "S2" and len(nodes) < 6:
                 report["warnings"].append(f"experiment_tree.json has only {len(nodes)} nodes (need >= 6)")
 
     # Check 5: Content-level deterministic checks per stage
@@ -500,7 +500,7 @@ def _check_ai_content_quality(ai_file: str, content: str) -> str | None:
         if len(lines) < 10:
             return f"too short ({len(lines)} content lines, need ≥10)"
         # Should contain at least some paper references
-        citations = re.findall(r'\[[\w\s,]+\d{4}\]', content)
+        citations = re.findall(r'\[[A-Z][\w\s.,&]+\d{4}\]', content)
         if len(citations) < 3:
             return f"only {len(citations)} citations found (need ≥3)"
 

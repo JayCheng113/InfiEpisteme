@@ -151,8 +151,14 @@ run_skill_execution() {
     rm -f "$judge_file"
 
     # State Guardian: advance or fail based on judge result
-    echo "[$(timestamp)] Evaluating judge result..."
-    python3 scripts/state_guard.py advance --stage "$guard_stage"
+    # Skip advance for S4 sub-stages (S4.1, S4.2, S4.3) — only advance after S4.4
+    # Otherwise advancing after S4.1 marks S4 complete, and resume skips S4.2-S4.4
+    if [[ "$stage_label" == S4.* && "$stage_label" != "S4.4" ]]; then
+        echo "[$(timestamp)] Sub-stage $stage_label — skipping advance (S4 advances after S4.4 only)"
+    else
+        echo "[$(timestamp)] Evaluating judge result..."
+        python3 scripts/state_guard.py advance --stage "$guard_stage"
+    fi
 }
 
 run_s4_with_checkpoints() {
