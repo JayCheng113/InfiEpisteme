@@ -131,7 +131,7 @@ run_skill_execution() {
     local mem_file
     mem_file="$(build_prompt_file skills/memory_sync.md)"
     printf '\n\nStage just completed: %s' "$stage_label" >> "$mem_file"
-    if ! claude -p "$(cat "$mem_file")" --allowedTools "Bash,Read,Write,Edit,Glob,Grep" 2>&1 | tee "state/${stage_label}_memory.log"; then
+    if ! run_claude_with_retry "state/${stage_label}_memory.log" -p "$(cat "$mem_file")" --allowedTools "Bash,Read,Write,Edit,Glob,Grep"; then
         echo "[$(timestamp)] Memory sync returned non-zero (non-fatal)"
     fi
     rm -f "$mem_file"
@@ -145,7 +145,7 @@ run_skill_execution() {
     local judge_file
     judge_file="$(build_prompt_file skills/judge.md)"
     printf '\n\nCurrent stage to judge: %s (sub-stage: %s)' "$guard_stage" "$stage_label" >> "$judge_file"
-    if ! claude -p "$(cat "$judge_file")" --allowedTools "Bash,Read,Write,Glob,Grep" 2>&1 | tee "state/${stage_label}_judge.log"; then
+    if ! run_claude_with_retry "state/${stage_label}_judge.log" -p "$(cat "$judge_file")" --allowedTools "Bash,Read,Write,Glob,Grep"; then
         echo "[$(timestamp)] Judge execution returned non-zero"
     fi
     rm -f "$judge_file"
