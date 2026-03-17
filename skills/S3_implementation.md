@@ -23,6 +23,14 @@
    - Common failures: node not runnable, baseline mismatch, missing evaluation harness.
    - Fix the specific issues rather than rewriting everything.
 
+### Implementation References
+Based on your research task, load the relevant reference guide:
+- **Custom small model (< 1B)**: Read `skills/references/impl-nanogpt.md` for nanoGPT patterns
+- **Using existing architectures (LLaMA, Mistral)**: Read `skills/references/impl-litgpt.md`
+- **Multi-GPU pretraining**: Read `skills/references/impl-torchtitan.md`
+- **Distributed training (FSDP)**: Read `skills/references/impl-fsdp2.md`
+- **Fast LoRA training**: Read `skills/references/impl-unsloth.md`
+
 ### Idempotency Check
 - Read `experiment_tree.json` and check node statuses.
 - If all root nodes have `status: "runnable"`: verify each actually runs, then skip.

@@ -61,7 +61,45 @@ Every agent starts with:
 - Stage output files (to distill into .ai/)
 - `.ai/context_chain.md` (to append new entry)
 
-## Step 3: Budget Check
+## Step 3: Load Implementation References (skills/references/)
 
-- Total loaded documents per agent: ≤ 5 (excluding context_chain.md which is always loaded)
+These reference files contain framework-specific code patterns from [Orchestra Research](https://github.com/Orchestra-Research/AI-Research-SKILLs). Load them **on demand via the Read tool** — do NOT skip this step.
+
+### S3 (Implementation) — MUST load at least one:
+| Condition | Reference to Read |
+|-----------|-------------------|
+| Building custom model < 1B params | `skills/references/impl-nanogpt.md` |
+| Using existing architecture (LLaMA, Mistral, Qwen) | `skills/references/impl-litgpt.md` |
+| `hardware_profile.json` shows GPU count > 1 | `skills/references/impl-fsdp2.md` |
+| `hardware_profile.json` shows VRAM < 24GB | `skills/references/impl-unsloth.md` |
+
+### S4 (Experiments) — Load based on experiment type:
+| Condition | Reference to Read |
+|-----------|-------------------|
+| Standard pretraining experiments | `skills/references/impl-nanogpt.md` or `impl-litgpt.md` |
+| `config.yaml` research_direction mentions GRPO/alignment/RL | `skills/references/impl-trl-grpo.md` |
+| Post-training (SFT, DPO, PPO) | `skills/references/impl-trl.md` |
+| Multi-GPU distributed training | `skills/references/impl-torchtitan.md` or `impl-fsdp2.md` |
+| Single GPU, memory-constrained | `skills/references/impl-unsloth.md` |
+
+### S5 (Analysis) — MUST load:
+| Condition | Reference to Read |
+|-----------|-------------------|
+| LLM evaluation on standard benchmarks | `skills/references/impl-lm-eval.md` |
+
+### S6 (Writing) — MUST load:
+| Condition | Reference to Read |
+|-----------|-------------------|
+| Always | `skills/references/writing-guide.md` |
+| Always | `skills/references/citation-verification.md` |
+
+### S7 (Review) — MUST load:
+| Condition | Reference to Read |
+|-----------|-------------------|
+| Always | `skills/references/reviewer-guidelines.md` |
+
+## Step 4: Budget Check
+
+- Total loaded .ai/ documents per agent: ≤ 5 (excluding context_chain.md which is always loaded)
+- Reference files (skills/references/) do NOT count toward this budget — load as many as relevant
 - If context is too large, prioritize: research-context > context_chain > methodology > literature

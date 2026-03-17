@@ -18,6 +18,13 @@
    - Read `retry_guidance` to see which tree stage failed.
    - Resume from the failed tree stage, not from the beginning.
 
+### Training Framework References
+Based on experiment type, load the relevant guide:
+- **Standard pretraining**: Read `skills/references/impl-nanogpt.md` or `skills/references/impl-litgpt.md`
+- **RL/alignment training (GRPO, PPO, DPO)**: Read `skills/references/impl-trl-grpo.md` or `skills/references/impl-trl.md`
+- **Multi-GPU distributed**: Read `skills/references/impl-fsdp2.md` or `skills/references/impl-torchtitan.md`
+- **Memory-constrained single GPU**: Read `skills/references/impl-unsloth.md`
+
 ### Idempotency Check
 - Check `tree_stages_complete` in registry.yaml.
 - If a tree stage is already complete (all nodes have results), skip it.

@@ -23,6 +23,10 @@
    - Common issues: LaTeX compilation errors, missing figures, phantom citations.
    - Fix the specific issues flagged.
 
+### Writing References
+- **ML paper writing best practices**: Read `skills/references/writing-guide.md` for narrative principles, abstract formula, and writing style
+- **Citation verification protocol**: Read `skills/references/citation-verification.md` (already required)
+
 ### Idempotency Check
 - If `paper.pdf` exists and compiles cleanly, and no retry: verify completeness and skip.
 - If partial (some sections exist): write only missing sections.

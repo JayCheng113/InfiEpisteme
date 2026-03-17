@@ -15,6 +15,9 @@
    - If max cycles (4) reached: report completion, do not start a new cycle.
 6. Check `state/JUDGE_RESULT.json` — if retrying, read `retry_guidance`.
 
+### Review References
+- **Reviewer evaluation criteria and scoring**: Read `skills/references/reviewer-guidelines.md`
+
 ### Idempotency Check
 - Check `reviews/cycle_{N}/` for the current cycle.
 - If all 3 reviews exist for this cycle: skip to aggregation.

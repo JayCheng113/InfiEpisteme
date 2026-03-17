@@ -18,6 +18,9 @@
    - Missing error analysis
    - Incomplete multi-perspective analysis
 
+### Evaluation References
+- **Standardized LLM benchmarks**: Read `skills/references/impl-lm-eval.md` for lm-evaluation-harness setup and benchmark selection
+
 ### Idempotency Check
 - If `ANALYSIS.md` exists with complete statistical tests: verify and skip.
 - If partial: complete the missing sections.

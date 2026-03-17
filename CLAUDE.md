@@ -20,6 +20,16 @@ Before starting any task, read the relevant documents from `.ai/`.
 | .ai/context_chain.md | Running reasoning chain across stages — the "why" thread |
 | skills/references/citation-verification.md | 5-step citation verification protocol |
 | skills/references/agent-continuity.md | Cross-session continuity reference |
+| skills/references/impl-nanogpt.md | nanoGPT patterns for custom small models (S3) |
+| skills/references/impl-litgpt.md | LitGPT pretrain/finetune with 20+ architectures (S3/S4) |
+| skills/references/impl-torchtitan.md | TorchTitan for large-scale distributed pretraining (S4) |
+| skills/references/impl-fsdp2.md | PyTorch FSDP2 distributed training (S3/S4) |
+| skills/references/impl-unsloth.md | Unsloth 2-5x faster LoRA training (S3/S4) |
+| skills/references/impl-trl-grpo.md | GRPO/RL training with TRL (S4) |
+| skills/references/impl-trl.md | TRL fine-tuning: SFT, DPO, PPO, GRPO (S4) |
+| skills/references/impl-lm-eval.md | lm-evaluation-harness for benchmarking (S5) |
+| skills/references/writing-guide.md | ML paper writing best practices (S6) |
+| skills/references/reviewer-guidelines.md | Reviewer criteria and rebuttal strategy (S7) |
 | templates/checklists/*.md | Venue-specific submission checklists (NeurIPS, ICML, ICLR, ACL, generic) |
 
 ## Loading Protocol
