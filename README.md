@@ -1,59 +1,150 @@
 # InfiEpisteme
 
-Fully automated research pipeline driven by Claude Code. From a research direction to a peer-review-quality paper, code repository, and experimental results — without human intervention after kickoff.
+Automated research pipeline designed for **local Claude Code remote supervision**. Clone this repo to a GPU server, then let your local Claude Code drive the entire research process — from literature review to a peer-review-quality paper — while you retain full control to steer direction at any moment.
 
 **v2.1**: MCP integration (Semantic Scholar, System Monitor, SSH), hardware-aware experiments, 5-step citation verification, venue-specific submission checklists, Git pre-registration protocol.
 
 ## How It Works
 
 ```
-You (30 min)                          Unattended (~hours)
-     |                                      |
-     v                                      v
-  Phase 0                            Phase 1 (sleep mode)
-  Direction                    S0 Init
-  Alignment        ->          S1 Literature Survey (20+ papers)
-  - What interests you?        S2 Ideation (6-perspective debate)
-  - What's the gap?            S3 Code Implementation
-  - What resources?            S4 Experiments (tree search, GPU)
-                               S5 Statistical Analysis
-                               S6 Paper Writing (LaTeX -> PDF)
-                               S7 Review-Revise (cross-model)
-                               S8 Delivery
-                                      |
-                                      v
-                               DELIVERY/
-                                 paper.pdf
-                                 code/
-                                 results/
+Phase 0: Local (you + Claude Code)           Phase 1: Remote (unattended)
+┌─────────────────────────────┐              ┌──────────────────────────┐
+│  You ←→ Claude Code         │              │  Remote GPU Server       │
+│                             │              │  InfiEpisteme/           │
+│  "I want to study X..."    │              │                          │
+│  "What about Y approach?"  │   SSH/MCP    │  run.sh start            │
+│                             │─────────────→│    S0 Init               │
+│  Claude Code:               │              │    S1 Literature (20+)   │
+│  - Web search arXiv/Scholar │   monitor    │    S2 Ideation (debate)  │
+│  - Find gaps in literature  │←─────────────│    S3 Implementation     │
+│  - Challenge your ideas     │              │    S4 Experiments (GPU)  │
+│  - Refine research question │   intervene  │    S5 Analysis           │
+│                             │─────────────→│    S6 Paper (LaTeX)      │
+│  Output: config.yaml +      │              │    S7 Review-Revise      │
+│          RESEARCH_PROPOSAL.md│              │    S8 Delivery           │
+│                             │              │         ↓                │
+│  "Looks good. Go run it."  │              │    DELIVERY/             │
+│                             │              │      paper.pdf           │
+│  (you can intervene anytime │              │      code/               │
+│   during Phase 1 too)       │              │      results/            │
+└─────────────────────────────┘              └──────────────────────────┘
 ```
 
-## Quick Start
+**Phase 0 happens locally** — you and Claude Code brainstorm the research direction in a live conversation. Claude Code searches the web for recent papers, identifies gaps, and challenges your assumptions. This is far richer than filling in a `config.yaml` and pressing start. When you're satisfied with the direction, Claude Code writes the proposal, SSHs to the remote server, and kicks off the unattended pipeline.
+
+**Phase 1 runs remotely** — the GPU server executes S0 through S8 autonomously. But your local Claude Code stays connected as the supervisor:
+
+- **Self-healing.** If S4 (experiments) fails due to OOM, Claude Code reads the remote logs, diagnoses the issue, fixes the config, and re-runs — without waking you up.
+- **Human-in-the-loop.** You can check in anytime. "How's it going?" → Claude Code reads `registry.yaml` remotely and reports status. "Change the learning rate range" → Claude Code SSHs in and adjusts.
+- **Web-augmented.** Mid-pipeline, you find a relevant new paper? Claude Code searches the web for it, reads it, and updates the remote `.ai/core/literature.md` and experiment plan.
+- **Cross-session continuity.** Walk away, come back tomorrow. Claude Code reads `.ai/` and `registry.yaml` from the remote server, reconstructs full context, and picks up exactly where things left off.
+
+## Setup
+
+### 1. Remote Server (one-time)
 
 ```bash
-# 1. Clone and configure
+# On your GPU server
 git clone https://github.com/your-org/InfiEpisteme.git
 cd InfiEpisteme
 pip install pyyaml requests
 
-# 2. (Optional) Install MCP servers for enhanced capabilities
-#    Replace <package> with the actual npm package for each server.
-#    See https://github.com/modelcontextprotocol/servers for available MCP servers.
+# Verify Claude Code is available on the server
+claude --version
+```
+
+### 2. Local Machine (one-time)
+
+```bash
+# Add SSH MCP server so local Claude Code can reach the remote
+claude mcp add ssh -- npx -y <ssh-mcp-package>
+
+# Optional: add Semantic Scholar MCP for literature search
 claude mcp add semantic-scholar -- npx -y <semantic-scholar-mcp-package>
-claude mcp add system-monitor -- npx -y <system-monitor-mcp-package>
-claude mcp add ssh -- npx -y <ssh-mcp-package>  # only if using remote GPU
+```
 
-# 3. Edit config.yaml
-#    - Set research_direction
-#    - Set compute budget (GPU hours, type)
-#    - Set cross_review API key (optional, for adversarial review)
-#    - Configure MCP settings (mcp section)
+### 3. Phase 0 — Local Brainstorm (you + Claude Code)
 
-# 4. Run
-./run.sh start      # Hardware detect → Interactive Phase 0 → fully unattended
-./run.sh status     # Check progress anytime
-./run.sh resume     # Resume after interruption
-./run.sh reset S4   # Reset a stage and retry
+Start a conversation with your local Claude Code. No need to edit config files — just talk:
+
+```
+You: I'm interested in whether MLP-Mixer can match ViT on CIFAR-10
+     with sub-1M parameters. What do you think?
+
+CC:  [searches web for recent MLP-Mixer papers, training recipes]
+     Interesting direction. Recent work shows training recipes matter more
+     than architecture — ConvNeXt showed this for CNNs. The gap hasn't been
+     systematically tested for Mixer vs ViT at small scale. Let me check
+     Semantic Scholar for prior work...
+     [searches] Found 3 related papers but none directly compare sub-1M.
+     This looks novel. What venue are you targeting?
+
+You: NeurIPS 2026. I have 4x A100 on my server at user@gpu-box.
+
+CC:  Good. A few questions to sharpen the proposal:
+     - Are you more interested in "which architecture wins" or
+       "how much does training recipe explain"?
+     - Should we include hybrid architectures (e.g., PoolFormer)?
+     ...
+```
+
+When the direction is clear, Claude Code writes `config.yaml` and `RESEARCH_PROPOSAL.md`, then you greenlight:
+
+```
+You: Looks good. Go run it on the server.
+
+CC:  [SSHs to user@gpu-box:~/InfiEpisteme]
+     [writes config.yaml, commits RESEARCH_PROPOSAL.md]
+     [runs ./run.sh start --skip-p0]
+     Pipeline started. S0 (init) running now. I'll monitor progress
+     and report back at each stage. ETA for S1 (literature): ~20 min.
+```
+
+### 4. Phase 1 — Remote Execution (unattended, supervised)
+
+The pipeline runs autonomously on the server. Your local Claude Code monitors via SSH and intervenes when needed:
+
+```
+CC:  [periodic check] S1 complete — found 24 papers, 4 baselines identified.
+     S2 (ideation) starting. I'll let you know when hypotheses are ready.
+
+     ...
+
+CC:  S2 generated 3 hypotheses. Want to review before experiments begin?
+
+You: Show me.
+
+CC:  [reads remote EXPERIMENT_PLAN.md via SSH]
+     H1: Modern training recipe closes 80% of Mixer-ViT gap
+     H2: Token-mixing MLP is the bottleneck — replacing it with pooling helps
+     H3: Mixer benefits more from data augmentation than ViT
+
+You: H2 is interesting. Drop H3, add a hypothesis about patch size sensitivity.
+
+CC:  [SSHs in, updates EXPERIMENT_PLAN.md and experiment_tree.json]
+     [resets S2 judge result, pipeline re-validates and continues to S3]
+     Done. Revised plan committed. S3 (implementation) starting.
+```
+
+You can also just leave it running and check in later:
+
+```
+You: How's the research going?
+
+CC:  [reads remote registry.yaml and experiment_tree.json]
+     Currently at S4.2 (hyperparameter tuning). 2/3 nodes complete.
+     Best accuracy so far: 87.2% (H1, lr=3e-4, cosine schedule).
+     No failures. ETA for S4 completion: ~40 min.
+```
+
+### Pipeline Commands (via Claude Code or directly on server)
+
+```bash
+./run.sh start           # Hardware detect → Phase 0 → full pipeline
+./run.sh start --skip-p0 # Skip Phase 0 (when proposal already written locally)
+./run.sh status          # Check current stage and progress
+./run.sh resume          # Resume after interruption
+./run.sh reset S4        # Reset a stage and retry
 ```
 
 ## Architecture
