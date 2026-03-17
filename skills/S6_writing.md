@@ -210,6 +210,14 @@ cp paper/main.pdf paper.pdf
 - All figures must have informative captions.
 - Number formatting: use consistent decimal places, proper significant figures.
 
+## Citation Coverage Rules
+
+- **Minimum 30 citations** in the final paper. A 10+ page paper with fewer than 30 citations signals inadequate literature coverage.
+- **Recency requirement**: At least 3 citations from the current or previous year. A paper submitted in 2026 with no 2025-2026 citations looks outdated.
+- **All papers from RELATED_WORK.md and BASELINES.md** should be cited somewhere in the paper. Do not drop references between S1 and S6.
+- **Every related work theme** must cite at least 3 papers. Single-citation themes suggest superficial coverage.
+- If bibliography.bib has fewer than 30 entries, go back to RELATED_WORK.md and add missing references before writing.
+
 ## When Done
 
 - `paper.pdf` exists and is a valid PDF.

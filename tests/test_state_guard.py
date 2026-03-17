@@ -109,11 +109,19 @@ class TestVerifyStage(StateGuardTestBase):
 
     def test_s1_all_outputs_present_passes(self):
         """S1 verify passes when all expected files exist."""
-        # Generate 20+ unique citations
-        citations = " ".join(f"[Author{i}, {2020+i%5}]" for i in range(25))
+        from datetime import datetime
+        cur_year = datetime.now().year
+        # Generate 30+ unique citations
+        citations = " ".join(f"[Author{i}, {2020+i%5}]" for i in range(35))
         (self.tmpdir / "RELATED_WORK.md").write_text(citations + "\n## Identified Gap\nGap here.")
         (self.tmpdir / "BASELINES.md").write_text("## Baseline 1\n## Baseline 2\n## Baseline 3\n")
-        (self.tmpdir / "bibliography.bib").write_text("@article{test, title={Test}}\n")
+        # Bibliography with recent papers
+        bib_entries = f"""@article{{a, title={{A}}, year={{{cur_year}}}}}
+@article{{b, title={{B}}, year={{{cur_year}}}}}
+@article{{c, title={{C}}, year={{{cur_year-1}}}}}
+@article{{d, title={{D}}, year={{2021}}}}
+"""
+        (self.tmpdir / "bibliography.bib").write_text(bib_entries)
         (self.tmpdir / ".ai" / "core" / "literature.md").write_text(
             "---\n---\n# Literature\n[A, 2023] [B, 2024] [C, 2025]\nBecause reasons."
         )

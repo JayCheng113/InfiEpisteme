@@ -255,20 +255,44 @@ def _run_content_checks(stage: str, report: dict):
     """Content-level deterministic checks that go beyond file existence."""
 
     if stage == "S1":
-        # RELATED_WORK.md: count unique citations >= 20
+        # RELATED_WORK.md: count unique citations >= 30
         rw_path = ROOT / "RELATED_WORK.md"
         if rw_path.exists():
             content = rw_path.read_text()
-            # Count citation patterns: [Author, Year] or similar
-            citations = set(re.findall(r'\[[\w\s,]+\d{4}\]', content))
-            if len(citations) < 20:
+            # Count citation patterns: [Author, Year] or \cite{key} style
+            bracket_cites = set(re.findall(r'\[[\w\s,]+\d{4}\]', content))
+            latex_cites = set(re.findall(r'\\cite[tp]?\{([^}]+)\}', content))
+            # Expand comma-separated \cite{a,b,c}
+            expanded_latex = set()
+            for group in latex_cites:
+                for key in group.split(","):
+                    expanded_latex.add(key.strip())
+            total_cites = len(bracket_cites) + len(expanded_latex)
+            if total_cites < 30:
                 report["checks"].append({"check": "S1_paper_count", "exists": False})
                 report["passed"] = False
                 report["warnings"].append(
-                    f"RELATED_WORK.md has only {len(citations)} unique citations (need >= 20)"
+                    f"RELATED_WORK.md has only {total_cites} unique citations (need >= 30)"
                 )
             else:
                 report["checks"].append({"check": "S1_paper_count", "exists": True})
+
+        # bibliography.bib: recency check — at least 3 papers from current or previous year
+        bib_path = ROOT / "bibliography.bib"
+        if bib_path.exists():
+            bib_content = bib_path.read_text()
+            current_year = datetime.now().year
+            recent_years = {str(current_year), str(current_year - 1)}
+            bib_years = re.findall(r'year\s*=\s*\{?(\d{4})\}?', bib_content)
+            recent_count = sum(1 for y in bib_years if y in recent_years)
+            if recent_count < 3:
+                report["checks"].append({"check": "S1_recency", "exists": False})
+                report["passed"] = False
+                report["warnings"].append(
+                    f"bibliography.bib has only {recent_count} papers from {current_year-1}-{current_year} (need >= 3)"
+                )
+            else:
+                report["checks"].append({"check": "S1_recency", "exists": True})
 
         # BASELINES.md: count baselines >= 3
         bl_path = ROOT / "BASELINES.md"
@@ -342,6 +366,36 @@ def _run_content_checks(stage: str, report: dict):
                     )
             except ImportError:
                 pass  # verify_citations not available, skip deep validation
+
+        # Citation count in paper >= 30
+        paper_dir = ROOT / "paper"
+        if paper_dir.exists():
+            cite_keys = set()
+            for tex_file in paper_dir.rglob("*.tex"):
+                tex_content = tex_file.read_text()
+                for match in re.finditer(r'\\cite[tp]?\{([^}]+)\}', tex_content):
+                    for key in match.group(1).split(","):
+                        cite_keys.add(key.strip())
+            if len(cite_keys) < 30:
+                report["checks"].append({"check": "S6_citation_count", "exists": False})
+                report["passed"] = False
+                report["warnings"].append(
+                    f"Paper has only {len(cite_keys)} unique citations (need >= 30)"
+                )
+            else:
+                report["checks"].append({"check": "S6_citation_count", "exists": True})
+
+        # Recency check on bibliography used in paper
+        if bib_path.exists():
+            bib_content = bib_path.read_text()
+            current_year = datetime.now().year
+            recent_years = {str(current_year), str(current_year - 1)}
+            bib_years = re.findall(r'year\s*=\s*\{?(\d{4})\}?', bib_content)
+            recent_count = sum(1 for y in bib_years if y in recent_years)
+            if recent_count < 3:
+                report["warnings"].append(
+                    f"Bibliography has only {recent_count} papers from {current_year-1}-{current_year} (need >= 3). Paper may appear outdated."
+                )
 
         # paper.pdf file size > 0
         pdf_path = ROOT / "paper.pdf"

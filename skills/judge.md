@@ -43,11 +43,12 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 
 #### S1 — Literature Survey
 - [ ] `RELATED_WORK.md` exists
-- [ ] Count of unique papers cited >= 20
+- [ ] Count of unique papers cited >= 30
 - [ ] `BASELINES.md` exists
 - [ ] Count of baselines with reported numbers >= 3
 - [ ] `bibliography.bib` exists and has entries
 - [ ] Every paper cited in RELATED_WORK.md has a bibliography.bib entry
+- [ ] **Recency check**: at least 3 papers in bibliography.bib from the current or previous year (e.g., 2025-2026 for a 2026 paper). Papers with no recent citations fail this check.
 
 #### S2 — Ideation
 - [ ] `EXPERIMENT_PLAN.md` exists
@@ -86,6 +87,8 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] No undefined references ("??" in PDF)
 - [ ] Every \cite{} key exists in bibliography.bib
 - [ ] **Full citation verification**: Run `python3 scripts/verify_citations.py --strict` and check `state/CITATION_VERIFY.json` — 100% pass rate required
+- [ ] **Citation count**: paper uses >= 30 unique \cite{} keys. Fewer than 30 indicates insufficient literature engagement.
+- [ ] **Recency**: at least 3 cited papers are from the current or previous year
 
 #### S7 — Review-Revise
 - [ ] `reviews/` directory has at least 1 cycle

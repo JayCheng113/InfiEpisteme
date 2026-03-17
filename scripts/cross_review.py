@@ -49,6 +49,8 @@ def call_openai(model: str, api_key: str, system_prompt: str, user_prompt: str) 
     try:
         import openai
         client = openai.OpenAI(api_key=api_key)
+        # Use max_completion_tokens for newer models (GPT-5+), max_tokens for older
+        token_param = "max_completion_tokens" if any(v in model for v in ["gpt-5", "gpt-4o-2025", "o1", "o3"]) else "max_tokens"
         response = client.chat.completions.create(
             model=model,
             messages=[
@@ -56,7 +58,7 @@ def call_openai(model: str, api_key: str, system_prompt: str, user_prompt: str) 
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.3,
-            max_tokens=4000,
+            **{token_param: 4000},
         )
         return response.choices[0].message.content
     except ImportError:
@@ -70,7 +72,7 @@ def call_openai(model: str, api_key: str, system_prompt: str, user_prompt: str) 
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": 0.3,
-            "max_tokens": 4000,
+            "max_completion_tokens" if any(v in model for v in ["gpt-5", "gpt-4o-2025", "o1", "o3"]) else "max_tokens": 4000,
         }
         resp = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=120)
         resp.raise_for_status()
