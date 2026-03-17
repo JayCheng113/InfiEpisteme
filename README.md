@@ -350,176 +350,127 @@ Before delivery, S8 verifies the paper against venue-specific requirements:
 
 ## Local CC Supervision Workflow
 
-The most effective way to run InfiEpisteme is **local Claude Code supervising a remote pipeline**. Your local CC acts as a mission controller: configuring, launching, monitoring risk, catching failures, hotfixing, and resuming — all through SSH.
+The most effective way to run InfiEpisteme is **talking to your local Claude Code** and letting it supervise the remote pipeline. You don't need to write SSH commands or remember script arguments — just have a conversation.
 
-### Why Not Just `./run.sh start` on the Server?
+### Why Supervise Instead of Fire-and-Forget?
 
-Running the pipeline unattended works for well-established research directions. But for **cutting-edge topics** (papers released days ago, novel combinations, under-explored areas), the pipeline will hit problems that require real-time judgment:
+For **cutting-edge topics** (papers released days ago, novel combinations), the pipeline will hit problems that need real-time judgment. Local CC catches these within minutes instead of discovering them after 3 failed retries.
 
-- Literature search APIs haven't indexed the target paper yet
-- Citation count thresholds fail because the field is too new
-- State guard regex doesn't match the citation format the LLM chose
-- Experiment designs exceed hardware budget
-- Judge criteria are too strict/lenient for the specific domain
+### Conversation Template
 
-Local CC supervision catches these **within minutes** instead of discovering them after 3 failed retries and a paused pipeline.
+Below is a real conversation flow from our first supervised run. Copy this pattern:
 
-### The Workflow
+---
+
+**Phase 0: Setup & Direction**
 
 ```
-Local Machine (Claude Code)                    Remote GPU Server
-┌──────────────────────────────┐              ┌──────────────────────────┐
-│                              │              │                          │
-│  1. Configure & Launch       │              │                          │
-│     ssh server "cd project   │──────────────│  config.yaml written     │
-│     && cat > config.yaml"    │              │  registry.yaml reset     │
-│                              │              │                          │
-│  2. Execute Stage            │              │                          │
-│     ssh server "claude -p    │──────────────│  claude -p runs skill    │
-│     '$(cat skills/S{N}.md)'" │              │  produces outputs        │
-│                              │              │                          │
-│  3. Verify & Monitor         │              │                          │
-│     ssh server "python3      │──────────────│  state_guard.py verify   │
-│     scripts/state_guard.py   │              │  returns pass/fail       │
-│     verify --stage S{N}"     │◄─────────────│                          │
-│                              │              │                          │
-│  4. Risk Detection           │              │                          │
-│     "Only 21 citations,      │              │                          │
-│      need 30. The regex      │              │                          │
-│      doesn't match 'et al.'" │              │                          │
-│                              │              │                          │
-│  5. Hotfix & Retry           │              │                          │
-│     Fix state_guard.py       │              │                          │
-│     locally, push to GitHub, │──────────────│  rsync fixed script      │
-│     rsync to server          │              │  re-verify: PASSED       │
-│                              │              │                          │
-│  6. Judge & Advance          │              │                          │
-│     ssh server "python3      │──────────────│  advance to next stage   │
-│     scripts/state_guard.py   │◄─────────────│                          │
-│     advance --stage S{N}"    │              │                          │
-│                              │              │                          │
-│  7. Repeat from step 2       │              │                          │
-└──────────────────────────────┘              └──────────────────────────┘
+You: 我的服务器是 ubuntu@129.146.162.231，上面有 A100。
+     帮我在上面 clone InfiEpisteme 并配置好。
+
+CC:  [SSHs to server, clones repo, checks hardware]
+     Done. A100-40GB, 216GB RAM, CUDA 12.8.
+     研究方向是什么？
+
+You: 研究 Kimi 最近提出的 Attention Residue，验证在 3B LLM 下的性能，
+     然后提出改进方案。目标 NeurIPS 2026。cross_review 用 gpt-5.4。
+
+CC:  [searches web for AttnRes paper — finds arxiv:2603.15031, 2 days old]
+     [identifies 5 competing methods: DCA, MUDDFormer, Hyper-Connections...]
+     [writes config.yaml and RESEARCH_PROPOSAL.md on server]
+
+     ⚠️ 风险预警:
+     1. 论文仅 2 天前发布，Semantic Scholar 大概率没收录
+     2. S1 的 30 篇引用要求需要扩展到 residual connections 整个领域
+     3. 0.5B 模型更现实 — 80 GPU-hours 只够 6 次训练
+
+You: 反正做个小型验证就行，0.5B 或 1.5B 你自己评估。
+
+CC:  [adjusts proposal to 0.5B scale, 5-10B tokens per run]
+     [executes P0 novelty check — finds direction is "Partially Novel"]
+     P0 完成，推进到 S0。
 ```
 
-### Step-by-Step Commands
+**Phase 1: Supervised Execution**
 
-**1. Setup & Launch**
-```bash
-# SSH to server, configure project
-ssh user@gpu-server "cd ~/project && cat > config.yaml << 'EOF'
-research_direction: "your direction"
-target_venue: "NeurIPS 2026"
-...
-EOF"
+```
+CC:  [executes S0 init, S1 literature survey on server]
+     S1 完成但 state guard 报错：只检测到 21 citations，需要 30。
 
-# Set stage to running
-ssh user@gpu-server "cd ~/project && python3 scripts/update_state.py set_running S1"
+     诊断：引用格式是 [Author et al., 2024]，但 state_guard.py 的
+     正则不匹配 "et al." 中的点号。
+
+     [fixes regex locally, pushes to GitHub, syncs to server]
+     [runs supplementary search to add 15 more papers]
+     重新验证：6/6 checks passed. 推进到 S2。
+
+You: 本地的修复推送了吗？
+
+CC:  已推送 (commit 27d15fe)。
 ```
 
-**2. Execute a Stage**
-```bash
-# Run skill via claude -p (pipe prompt from skill files)
-ssh -o ServerAliveInterval=60 user@gpu-server \
-  "cd ~/project && timeout 1200 claude -p \"\$(cat skills/_common.md)
-\$(cat skills/S1_literature.md)\" \
-  --allowedTools 'Bash,Read,Write,Edit,Glob,Grep,WebSearch,Agent' \
-  2>&1 | tee state/S1_output.log | tail -80"
+**Phase 2: Ongoing Monitoring**
+
+```
+You: 现在到哪了？
+
+CC:  [checks registry.yaml on server]
+     S2 Ideation 完成。生成了 2 个假设、6 个实验节点。
+     S3 Implementation 正在执行中...
+
+You: S4 实验的时候注意 GPU 内存，0.5B 用 bf16 应该够。
+
+CC:  收到，我会在 S4 开始前检查 hardware_profile.json
+     并确保 batch size 设置合理。
+
+     ...
+
+CC:  S4.1 完成，3/6 节点成功。有一个 OOM 了 —
+     batch_size=64 太大。我已经改成 32 并重跑。
 ```
 
-For long-running stages, run in background:
-```bash
-# Use Bash tool with run_in_background=true, then check later
-ssh user@gpu-server "nohup claude -p '...' > state/S4_output.log 2>&1 &"
+**Phase 3: Intervention**
+
 ```
+You: 我看了实验结果，H2 的方向不太对。能换成 ... 吗？
 
-**3. Verify**
-```bash
-ssh user@gpu-server "cd ~/project && python3 scripts/state_guard.py verify --stage S1"
-# Output: Guard: 6/6 checks passed, 0 repairs, 1 warnings
-```
+CC:  [reads experiment_tree.json, updates H2 nodes]
+     [resets S4 judge result, re-runs affected sub-stage]
+     已调整，新方向的节点已提交。
 
-**4. Diagnose Failures**
-```bash
-# Check what went wrong
-ssh user@gpu-server "cd ~/project && cat state/GUARD_RESULT.json"
+You: 论文引用太少了，而且没有近期的。
 
-# Read the output files to understand the issue
-ssh user@gpu-server "cd ~/project && head -40 RELATED_WORK.md"
-
-# Count citations manually to verify
-ssh user@gpu-server "cd ~/project && grep -oP '\[[A-Z][\w\s.,&]+\d{4}\]' RELATED_WORK.md | sort -u | wc -l"
-```
-
-**5. Hotfix Locally, Push, Sync**
-```bash
-# Fix the bug in your local repo
-# Edit scripts/state_guard.py locally
-
-# Push to GitHub
-git add scripts/state_guard.py && git commit -m "fix: citation regex" && git push
-
-# Sync to server
-rsync -az scripts/state_guard.py user@gpu-server:~/project/scripts/
-```
-
-**6. Supplement & Retry**
-```bash
-# If outputs are insufficient, run a targeted supplement
-ssh user@gpu-server "cd ~/project && timeout 600 claude -p \
-  'Read RELATED_WORK.md. It has only 21 citations, need 30+. Add 10 more papers covering: ...' \
-  --allowedTools 'Bash,Read,Write,Edit,WebSearch' 2>&1 | tail -20"
-
-# Re-verify
-ssh user@gpu-server "cd ~/project && python3 scripts/state_guard.py verify --stage S1"
-```
-
-**7. Judge & Advance**
-```bash
-# Write judge result (or run claude -p with judge.md)
-ssh user@gpu-server "cd ~/project && python3 scripts/state_guard.py advance --stage S1"
-# Output: PASSED — advanced to S2
+CC:  [diagnoses: S6 只引了 21 篇，没有 2025-2026 的]
+     [adds citation count enforcement to state_guard.py]
+     [runs targeted supplement search for recent papers]
+     修复完成并推送。
 ```
 
 ### Risk Prediction Checklist
 
-Before each stage, anticipate problems based on your research topic:
+Before each stage, tell CC to watch for these:
 
-| Stage | Risk Signal | What to Watch |
-|-------|------------|---------------|
-| **S1** | Paper < 6 months old | Semantic Scholar won't have it. Use `WebSearch` fallback. Broaden to related fields for 30-paper quota. |
-| **S1** | Niche topic | May not reach 30 papers. Document search queries tried; threshold can be manually lowered. |
-| **S2** | Limited hardware | Check that proposed experiments fit in GPU-hours budget. 0.5B model × 5B tokens ≈ 13hrs on A100-40GB. |
-| **S3** | No reference implementation | If the paper has no code release, S3 will take longer and may produce bugs. Plan for debugging time. |
-| **S4** | Budget overrun | Monitor `experiment_tree.json` GPU-hours. Kill early if approaching budget. |
-| **S4** | experiment_tree.json not updated | Known issue: LLM sometimes forgets to update node status. Check manually after each sub-stage. |
-| **S6** | Citation format mismatch | `state_guard.py` regex must match the format S6 uses. Verify with `grep` before relying on automated checks. |
-| **S7** | Cross-review API failure | If `OPENAI_API_KEY` not set or model unavailable, S7 falls back to self-review. Check logs. |
+| Stage | Risk Signal | What to Tell CC |
+|-------|------------|-----------------|
+| **S1** | Paper < 6 months old | "这篇论文很新，Semantic Scholar 可能搜不到，用 WebSearch 兜底" |
+| **S1** | Niche topic | "这个方向论文不多，可能凑不够 30 篇，扩展到相关领域" |
+| **S2** | Limited hardware | "注意实验方案要在 80 GPU-hours 内可行" |
+| **S3** | No reference code | "原论文没开源代码，S3 可能要从头实现，预留调试时间" |
+| **S4** | Budget overrun | "监控 GPU 使用时间，快超预算时提前停" |
+| **S6** | Citation issues | "检查引用数量和格式，上次出过正则不匹配的 bug" |
+| **S7** | API key missing | "确认 OPENAI_API_KEY 已设置，否则 cross-review 会失败" |
 
-### Monitoring Commands Cheat Sheet
+### Key Phrases for CC
 
-```bash
-# Pipeline status
-ssh user@gpu-server "cd ~/project && cat registry.yaml | head -15"
-
-# Current stage output (live tail)
-ssh user@gpu-server "cd ~/project && tail -50 state/S{N}_output.log"
-
-# Last judge result
-ssh user@gpu-server "cd ~/project && cat state/JUDGE_RESULT.json | python3 -m json.tool"
-
-# GPU usage
-ssh user@gpu-server "nvidia-smi"
-
-# Experiment progress
-ssh user@gpu-server "cd ~/project && python3 -c \"
-import json; t=json.load(open('experiment_tree.json'))
-for n in t.get('nodes',[]): print(f'{n[\"id\"]:15s} {n[\"status\"]:10s} {n.get(\"results\",{}).get(\"primary_metric\",\"\")}')
-\""
-
-# Git log (verify pre-registration)
-ssh user@gpu-server "cd ~/project && git log --oneline -10"
-```
+| You Say | CC Does |
+|---------|---------|
+| "在服务器上运行 pipeline" | SSH to server, configure, start execution |
+| "现在到哪了" | Reads registry.yaml, reports status |
+| "这个阶段有什么风险" | Analyzes research topic vs pipeline requirements |
+| "修复推送了吗" | Checks git status, commits, pushes |
+| "停掉，我要改方向" | Kills processes, resets stage |
+| "继续" | Resumes from current stage |
+| "把本地修复同步到服务器" | rsync or git pull on server |
 
 ## Safety Mechanisms
 
