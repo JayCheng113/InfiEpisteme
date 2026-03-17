@@ -30,55 +30,66 @@ CC:  [searches web, finds paper, identifies 5 competing methods]
 | Monitor scripts manually | CC watches for risks proactively |
 | Restart from scratch on failure | CC retries, hotfixes, resumes |
 
-**Key advantage**: You command one local Claude Code, which commands multiple Claude Code instances on the server. A chain of command — from natural language to autonomous research.
+**Key advantage**: You command one local Claude Code, which commands multiple Claude Code instances on the server — and actively monitors, diagnoses, and hotfixes along the way.
 
 ## Architecture
 
 ```
-                          ┌─────────┐
-                          │   You   │
-                          └────┬────┘
-                               │ natural language
-                               ▼
-               ┌───────────────────────────────┐
-               │  Local Claude Code             │
-               │  (mission control)             │
-               │                                │
-               │  • Web search for papers       │
-               │  • Risk prediction per stage   │
-               │  • Diagnose & hotfix bugs      │
-               │  • Push fixes to GitHub        │
-               │  • Report progress to you      │
-               └───────────────┬───────────────┘
-                               │ SSH
-                               ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  GPU SERVER                                                      │
-│                                                                  │
-│  run.sh orchestrates multiple claude -p instances:               │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │ Claude Code   │  │ Claude Code   │  │ Claude Code   │         │
-│  │ (S1 skill)    │  │ (memory sync) │  │ (judge)       │         │
-│  │              │  │              │  │              │          │
-│  │ Searches lit, │  │ Reads outputs,│  │ Evaluates    │          │
-│  │ writes papers │  │ updates .ai/ │  │ quality,     │          │
-│  │ & baselines   │  │ knowledge    │  │ pass/fail    │          │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
-│         │                 │                  │                   │
-│         ▼                 ▼                  ▼                   │
-│  ┌─────────────────────────────────────────────────────┐        │
-│  │  Shared File System                                  │        │
-│  │  registry.yaml │ .ai/ │ experiment_tree.json │ src/ │        │
-│  └─────────────────────────────────────────────────────┘        │
-│                                                                  │
-│  Each stage cycle:                                               │
-│  skill CC → state_guard.py → memory CC → judge CC → advance     │
-│                                                                  │
-│  P0 → S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8            │
-│       init  lit  idea  code  exp  anal write  rev  ship          │
-└──────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                                                                        │
+│   You: "Study Attention Residuals, target NeurIPS 2026"                │
+│    │                                                                   │
+│    ▼                                                                   │
+│   Local Claude Code ◄──────────────────────────────────────────┐      │
+│    │  (mission control — the only CC you talk to)              │      │
+│    │                                                            │      │
+│    ├─ Web search: finds paper, competing methods               │      │
+│    ├─ Risk analysis: "paper is 2 days old, S1 will struggle"   │      │
+│    ├─ SSH: configures server, writes config.yaml               │      │
+│    │                                                            │      │
+│    │   ┌─ Executes stage ──────────────────────────────┐       │      │
+│    │   │                                                │       │      │
+│    ├───┼─ ssh: claude -p "skills/S1.md" ───────────────┼──►[1] │      │
+│    │   │  (spawns CC instance on server for skill)      │       │      │
+│    │   │                                                │       │      │
+│    ├───┼─ ssh: state_guard.py verify ──────────────────┼──►[2] │      │
+│    │   │  (deterministic check — no CC needed)          │       │      │
+│    │   │                                                │       │      │
+│    │   │  ◄── FAIL: "only 21 citations, need 30"       │       │      │
+│    │   │                                                │       │      │
+│    ├─ Diagnoses: "regex doesn't match 'et al.' format" │       │      │
+│    ├─ Fixes state_guard.py locally                      │       │      │
+│    ├─ git push + rsync to server                        │       │      │
+│    ├─ Runs supplement search for more papers            │       │      │
+│    │   │                                                │       │      │
+│    ├───┼─ ssh: state_guard.py verify ──────────────────┼──►[3] │      │
+│    │   │  ◄── PASS: 36 citations                        │       │      │
+│    │   │                                                │       │      │
+│    ├───┼─ ssh: claude -p "skills/judge.md" ────────────┼──►[4] │      │
+│    │   │  (spawns CC instance for quality evaluation)   │       │      │
+│    │   │                                                │       │      │
+│    ├───┼─ ssh: state_guard.py advance ─────────────────┼──►[5] │      │
+│    │   │  ◄── "PASSED — advanced to S2"                 │       │      │
+│    │   └────────────────────────────────────────────────┘       │      │
+│    │                                                            │      │
+│    ├─ Reports to you: "S1 done, 36 papers. Starting S2."  ─────┘      │
+│    │                                                                   │
+│    └─ Repeats for S2, S3, S4... ─── intervene anytime ◄── You        │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+
+GPU Server receives SSH commands. Each "claude -p" spawns an independent
+CC instance that reads skill instructions, does the work, writes files.
+Local CC checks results, decides next action. No run.sh required.
 ```
+
+**`run.sh` is optional.** It automates the loop for unattended runs, but the real orchestrator is your local Claude Code. In practice, local CC provides better results because it can:
+
+- **Predict risks** before they happen ("this paper is too new for Semantic Scholar")
+- **Diagnose root causes** when checks fail ("regex doesn't match this citation format")
+- **Hotfix and retry** without waiting for 3 automated failures
+- **Search the web** for context that server-side CC can't access
+- **Report to you** in plain language and ask for judgment calls
 
 **The chain of command**: You give one instruction in natural language → your local CC breaks it into actions → each action spawns a dedicated CC instance on the server (one for the skill, one for memory sync, one for judging) → they coordinate through shared files → local CC monitors results and intervenes when needed.
 
