@@ -1,244 +1,203 @@
 # InfiEpisteme
 
-Automated research pipeline driven by Claude Code. Give it a research direction, and it delivers: a peer-review-quality paper (PDF), clean code repository, and organized experimental results.
+> **Talk to Claude Code. Get a research paper.**
 
-**Just talk to Claude Code.** No config files to edit, no scripts to memorize. Describe your research interest, and CC handles everything — from literature search to paper compilation.
+InfiEpisteme is an automated research pipeline that turns a research idea into a peer-review-quality paper, clean code, and organized results — all through natural language conversation with Claude Code.
 
-## Quick Start
+No frameworks to learn. No config files to edit. No scripts to memorize. Just describe what you want to study.
 
 ```
-You: Clone InfiEpisteme to my GPU server at user@gpu-box and set it up.
-
-CC:  [SSHs to server, clones repo, detects hardware]
-     Done. A100-40GB, 216GB RAM, CUDA 12.8. What's your research direction?
-
 You: I want to study Kimi's Attention Residuals paper that just came out.
      Validate it on small LLMs and propose improvements. Target NeurIPS 2026.
 
-CC:  [web-searches the paper, finds competing methods, writes proposal]
-     ⚠️ Heads up: this paper is only 2 days old. Semantic Scholar won't have it yet.
-     I'll use web search as fallback and broaden to the residual connections field.
-     [starts pipeline on server, monitors each stage]
+CC:  [searches web, finds paper, identifies 5 competing methods]
+     [sets up server, writes proposal, starts 9-stage pipeline]
+     [monitors, catches bugs, fixes them, keeps going]
 
-     ...20 min later...
+     ...6 hours later...
 
-     S1 literature done but only found 21 citations (need 30).
-     The regex in state_guard.py doesn't match "et al." format.
-     [fixes locally, pushes to GitHub, syncs to server, re-verifies]
-     Fixed. 36 citations now. Advancing to S2.
+     Pipeline complete. Paper: 12 pages, 36 citations, 6 experiments.
+     → DELIVERY/paper.pdf
+```
 
+## Why InfiEpisteme?
+
+| Traditional | InfiEpisteme |
+|-------------|-------------|
+| Edit YAML configs | Just talk |
+| Read docs to learn the framework | CC already knows how |
+| SSH in to debug when things break | CC diagnoses and fixes automatically |
+| Monitor scripts manually | CC watches for risks proactively |
+| Restart from scratch on failure | CC retries, hotfixes, resumes |
+
+**Key advantage**: Your local Claude Code acts as mission control — it SSHs to your GPU server, runs the pipeline, monitors every stage, catches problems before they cascade, fixes bugs in real-time, and reports back in plain language.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  YOUR LOCAL MACHINE                                                 │
+│                                                                     │
+│  You ←→ Claude Code (mission control)                               │
+│         │                                                           │
+│         │  • Searches web for papers                                │
+│         │  • Predicts risks per stage                               │
+│         │  • Diagnoses failures                                     │
+│         │  • Hotfixes code, pushes to GitHub                        │
+│         │  • Reports progress in plain language                     │
+│         │                                                           │
+│         │          SSH                                               │
+└─────────┼───────────────────────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  GPU SERVER                                                         │
+│                                                                     │
+│  run.sh ─── for each stage ──────────────────────────────┐         │
+│       │                                                   │         │
+│       ├─→ claude -p "skills/S{N}.md"    Execute skill     │         │
+│       ├─→ state_guard.py verify         Validate output   │ repeat  │
+│       ├─→ claude -p "memory_sync.md"    Consolidate .ai/  │         │
+│       ├─→ claude -p "judge.md"          Quality gate      │         │
+│       └─→ state_guard.py advance        Next stage ───────┘         │
+│                                                                     │
+│  Pipeline: P0 → S0 → S1 → S2 → S3 → S4 → S5 → S6 → S7 → S8     │
+│            ▲         lit   idea  code  exp   anal write rev  ship   │
+│            │                                                        │
+│       hardware                                                      │
+│       detection                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### .md Files Are the Program
+
+All research logic lives in `skills/*.md` files — structured markdown that Claude Code executes natively. No framework overhead, no hidden state. Every decision traces back to a readable `.md` file.
+
+### Three-Layer Memory
+
+Each `claude -p` call is stateless. Memory is reconstructed from files:
+
+```
+Layer 1: State         registry.yaml, experiment_tree.json
+Layer 2: Knowledge     .ai/core/ (research context, methodology, literature)
+                       .ai/evolution/ (decisions, negative results, experiment log)
+Layer 3: Context       .ai/context_chain.md — the "why" thread across stages
+```
+
+A dedicated Memory Synthesizer runs after every stage to consolidate knowledge. Skills never write to `.ai/` directly.
+
+## How to Use
+
+### Getting Started
+
+```
+You: My server is user@gpu-box with an A100. Clone InfiEpisteme and set it up.
+CC:  [SSHs to server, clones, detects hardware] Done. What's your research direction?
+
+You: [describe your research idea in plain language]
+CC:  [searches literature, checks novelty, writes proposal, starts pipeline]
+```
+
+### Monitoring
+
+```
 You: What's the status?
-
-CC:  S3 (Implementation) running. Already created 7 model variants:
-     PreNorm, AttnRes, DCA, MUDDFormer, Hyper-Connections, DenseFormer, hybrid.
-
-You: Watch the GPU memory during experiments. 0.5B with bf16 should fit.
-
-CC:  Got it. I'll verify batch sizes against hardware_profile.json before S4.
-```
-
-That's it. CC handles SSH, configuration, execution, monitoring, debugging, and hotfixing. You steer.
-
-## Setup
-
-**On your GPU server:**
-```bash
-git clone https://github.com/your-org/InfiEpisteme.git
-cd InfiEpisteme
-pip install pyyaml requests
-claude --version   # Ensure Claude Code is installed
-```
-
-**On your local machine:** Just have Claude Code installed. Optionally add MCP servers for enhanced paper search:
-```bash
-claude mcp add semantic-scholar -- npx -y <semantic-scholar-mcp-package>
-```
-
-## Pipeline Stages
-
-```
-[Hardware Detection] → P0: Direction Alignment (interactive)
-S0: Init → S1: Literature (30+ papers) → S2: Ideation (6-perspective debate)
-→ S3: Implementation → S4: Experiments (progressive tree search)
-→ S5: Analysis → S6: Paper (LaTeX + citation verification)
-→ S7: Review-Revise (cross-model) → S8: Delivery
-```
-
-Each stage follows the same cycle: **execute → verify → memory sync → judge → advance**. If a stage fails, the pipeline retries up to 3 times, then pauses for your input.
-
-## How to Use (Conversation Patterns)
-
-### Starting a Project
-
-```
-You: My server is user@gpu-box with 2x A100. I want to study [topic].
-     Target [venue]. Use [model] for cross-review.
-
-CC:  [sets up server, writes config, runs P0 novelty check]
-     Direction looks [Novel/Partially Novel]. Starting pipeline.
-```
-
-### Monitoring Progress
-
-```
-You: What's the status?
-CC:  Currently at S4.2. 4/6 experiment nodes complete. Best result: ...
-
-You: Show me the experiment plan.
-CC:  [reads EXPERIMENT_PLAN.md from server and summarizes]
+CC:  S4.2 running. 4/6 experiments complete. Best accuracy: 87.2%.
 
 You: What are the risks for this stage?
-CC:  S4 risks: budget overrun (67/80 GPU-hours used), OOM on large batch sizes...
+CC:  Paper is only 2 days old — Semantic Scholar won't have it. I'm using web search.
 ```
 
 ### Intervening
 
 ```
-You: H2's direction is wrong. Change it to [new idea].
-CC:  [updates experiment_tree.json, resets affected sub-stage, re-runs]
+You: Change H2's direction to [new idea].
+CC:  [updates experiment tree, re-runs affected sub-stage]
 
-You: The paper needs more recent citations.
-CC:  [runs targeted search, adds papers, re-verifies citation count]
-
-You: Stop. I want to change direction entirely.
-CC:  [kills processes, resets pipeline to P0]
+You: Stop. I want a completely different topic.
+CC:  [kills processes, resets to P0, waits for your new direction]
 ```
 
-### Debugging
+### Debugging (CC does this automatically)
 
 ```
-CC:  S1 failed: state guard says only 21 citations (need 30).
-     Diagnosis: citation regex doesn't match [Author et al., Year] format.
-     [fixes locally, pushes, syncs to server, re-verifies]
-     6/6 checks passed now.
-
-You: Did you push the fix?
-CC:  Yes, commit abc123.
+CC:  S1 failed: only 21 citations detected (need 30).
+     Root cause: regex doesn't match "et al." format.
+     [fixes locally, pushes to GitHub, syncs to server, re-verifies]
+     Fixed. 36 citations now. Advancing.
 ```
 
-### Quick Reference
+## Pipeline Stages
 
-| You Say | CC Does |
-|---------|---------|
-| "Run the pipeline on the server" | SSH, configure, start execution |
-| "What's the status?" | Read registry.yaml, report progress |
-| "What are the risks?" | Analyze topic vs pipeline requirements |
-| "Did you push the fix?" | Commit, push to GitHub |
-| "Stop, change direction" | Kill processes, reset stage |
-| "Continue" | Resume from current stage |
+| Stage | What Happens | Output |
+|-------|-------------|--------|
+| **P0** | You + CC brainstorm direction, novelty check | `RESEARCH_PROPOSAL.md` |
+| **S0** | Hardware detection, init .ai/ knowledge base | `hardware_profile.json`, `.ai/` |
+| **S1** | Literature survey (30+ papers, multi-source) | `RELATED_WORK.md`, `BASELINES.md`, `bibliography.bib` |
+| **S2** | 6-perspective hypothesis debate, experiment design | `EXPERIMENT_PLAN.md`, `experiment_tree.json` |
+| **S3** | Implement methods + baselines | `src/`, `requirements.txt` |
+| **S4** | Progressive tree search (4 sub-stages, 6+ experiments) | `RESULTS_SUMMARY.md`, `results/` |
+| **S5** | Statistical analysis, 6-perspective interpretation | `ANALYSIS.md`, `tables/`, `figures/` |
+| **S6** | LaTeX paper with 5-step citation verification | `paper.pdf` |
+| **S7** | Cross-model adversarial review (Claude writes, GPT reviews) | `reviews/` |
+| **S8** | Package deliverables, venue-specific checklist | `DELIVERY/` |
 
-## Architecture
+## Safety & Quality
 
-**.md files are the program.** All research logic lives in `skills/*.md` — no framework, no hidden state, fully auditable.
+| Mechanism | What It Does |
+|-----------|-------------|
+| **Circuit breaker** | Same failure 3x → pauses for human input |
+| **State Guard** | Deterministic Python checks after every stage |
+| **LLM Judge** | Adversarial quality assessment before advancing |
+| **Citation verification** | 5-step protocol — every citation verified in 2+ sources |
+| **Cross-model review** | External model (GPT) reviews the paper Claude wrote |
+| **Hardware detection** | Prevents experiments exceeding GPU/RAM capacity |
+| **Git pre-registration** | Experiment design committed before execution |
+| **Venue checklists** | NeurIPS/ICML/ICLR/ACL-specific checks before delivery |
 
-```
-run.sh (orchestrator)
-  ├── claude -p "skills/S0_hardware.md"              → hardware detection (once)
-  ├── claude -p "skills/_common.md + skills/S{N}.md" → execute stage
-  ├── scripts/state_guard.py verify                  → validate outputs
-  ├── claude -p "skills/memory_sync.md"              → consolidate knowledge
-  ├── claude -p "skills/judge.md"                    → quality gate
-  └── scripts/state_guard.py advance                 → progress pipeline
-```
+## Risk Prediction
 
-### Memory System
+When working on cutting-edge topics, CC proactively watches for:
 
-Each `claude -p` call is stateless. Memory is reconstructed from three layers:
+| Risk | CC's Response |
+|------|--------------|
+| Paper too new for Semantic Scholar | Falls back to web search, broadens to related fields |
+| Not enough papers for 30-citation threshold | Supplements with adjacent literature |
+| Experiments exceed GPU budget | Adjusts batch size, reduces model scale, or stops early |
+| Citation format mismatch | Fixes validation regex, re-verifies |
+| API errors mid-pipeline | Retries, or resumes from last checkpoint |
 
-| Layer | Source | Purpose |
-|-------|--------|---------|
-| State | `registry.yaml`, `experiment_tree.json` | Pipeline position, experiment progress |
-| Knowledge | `.ai/core/`, `.ai/evolution/` | Research context, methodology, decisions, negative results |
-| Context Chain | `.ai/context_chain.md` | Cross-stage reasoning — the "why" thread |
+## Setup
 
-Skills do NOT update `.ai/` files directly. A dedicated **Memory Synthesizer** runs after every stage to consolidate knowledge, ensuring quality.
-
-### Quality Gates
-
-Every stage must pass three checks before advancing:
-
-1. **State Guard** (deterministic Python) — files exist, citation counts met, fields populated
-2. **Memory Sync** — knowledge consolidated into `.ai/`
-3. **LLM Judge** — adversarial content quality assessment (checks the work makes scientific sense)
-
-### Cross-Model Review (S7)
-
-The paper written by Claude is reviewed by an external model (GPT-4o/GPT-5.4):
-
-| Reviewer | Model | Focus |
-|----------|-------|-------|
-| R1 | External | Methods, technical soundness |
-| R2 | Internal (Claude) | Clarity, presentation |
-| R3 | External | Novelty, contribution |
-
-### Progressive Experiment Tree (S4)
-
-S4 doesn't run one experiment — it searches through a tree of 4 stages:
-
-```
-4.1: Preliminary (6 root nodes) → 4.2: Hyperparameter tuning
-→ 4.3: Method refinement → 4.4: Ablation studies → RESULTS_SUMMARY.md
+**GPU Server** (one-time):
+```bash
+git clone https://github.com/your-org/InfiEpisteme.git && cd InfiEpisteme
+pip install pyyaml requests
+claude --version   # Claude Code must be installed
 ```
 
-## Risk Prediction Guide
+**Local Machine**: Just have Claude Code installed. Then start a conversation.
 
-When supervising cutting-edge research, watch for these:
-
-| Stage | Risk Signal | What to Tell CC |
-|-------|------------|-----------------|
-| **S1** | Paper < 6 months old | "Semantic Scholar won't have it. Use web search. Broaden to related fields." |
-| **S2** | Limited hardware | "Experiments must fit within N GPU-hours." |
-| **S3** | No reference code | "Paper has no open-source code. Plan for implementation from scratch." |
-| **S4** | Budget overrun | "Monitor GPU usage. Stop early if approaching budget." |
-| **S6** | Citation issues | "Check citation count and format — we've seen regex mismatches before." |
-| **S7** | API key missing | "Confirm OPENAI_API_KEY is set for cross-review." |
-
-## Configuration
-
-All done through conversation with CC, or edit `config.yaml` directly:
-
-```yaml
-research_direction: "your research question"
-target_venue: "NeurIPS 2026"
-target_score: 6.0                    # minimum reviewer score
-
-compute:
-  gpu_hours: 100
-  gpu_type: "A100"
-  parallel_jobs: 3
-
-cross_review:
-  enabled: true
-  model: "gpt-4o"                    # or "gpt-5.4"
-  api_key_env: "OPENAI_API_KEY"
+**Optional MCP servers** for enhanced paper search:
+```bash
+claude mcp add semantic-scholar -- npx -y <semantic-scholar-mcp-package>
 ```
 
 ## What It Produces
 
 ```
 DELIVERY/
-  paper.pdf               # Peer-review-quality paper
-  code/src/               # Clean implementation
-  code/requirements.txt
-  results/                # Full experiment tree with metrics and figures
-  reviews/                # All reviewer feedback across cycles
-  DELIVERY.md             # Summary for human review
+  paper.pdf                 # Peer-review-quality paper
+  code/src/                 # Clean implementation
+  code/requirements.txt     # Dependencies
+  results/                  # Experiment tree, metrics, figures
+  reviews/                  # All reviewer feedback
+  DELIVERY.md               # Summary for human review
 ```
-
-## Safety Mechanisms
-
-| Mechanism | Purpose |
-|-----------|---------|
-| Circuit breaker | Same failure 3x → pipeline pauses for human |
-| GPU budget check | Flags experiments exceeding compute budget |
-| Judge gate | Every stage must pass LLM-as-judge |
-| Citation verification | 5-step protocol eliminates ~40% LLM citation error rate |
-| Git pre-registration | Experiment design committed before execution |
-| Hardware detection | Prevents experiments exceeding GPU/RAM capacity |
-| Venue checklists | NeurIPS/ICML/ICLR/ACL-specific checks before delivery |
 
 ## Acknowledgments
 
+Design informed by:
 - [ARIS](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep) — cross-model review, state-persistent loops
 - [Sibyl](https://github.com/Sibyl-Research-Team/sibyl-research-system) — multi-perspective debate, self-healing
 - [GPT-Researcher](https://github.com/assafelovic/gpt-researcher) — multi-source aggregation
