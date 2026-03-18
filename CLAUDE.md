@@ -101,6 +101,7 @@ Use first-principles thinking. Do not assume I always know exactly what I want o
 10. MCP-first: prefer MCP tools over Python scripts; scripts are fallbacks
 11. Git pre-registration: experiment design committed before execution (`research(protocol):`)
 12. Venue checklists: S8 verifies paper against venue-specific requirements
+13. Novel method design: when the user proposes a new method (especially with math/formulas), discuss implementation details with the user BEFORE dispatching to the server. Identify key decisions not specified in the design (hyperparameter scales, edge cases, invariants), present them to the user, and reach agreement before writing code. Do not silently fill in unspecified details with defaults from other contexts.
 
 ## Quick Reference
 
