@@ -31,32 +31,53 @@ You perform rigorous statistical analysis and provide multi-perspective interpre
 
 ## Process
 
+### Step 0: Determine What Analysis This Research Needs
+
+Before running any analysis, read `.ai/core/research-context.md`, `EXPERIMENT_PLAN.md`, and `config.yaml` (target venue). Then answer these questions:
+
+1. **What are the paper's key claims?** List each claim and what evidence would prove or disprove it.
+2. **What would a reviewer at {target_venue} expect to see?** Different fields have different norms — an efficiency paper needs throughput comparisons; a method paper needs ablations; a benchmark paper needs controlled conditions.
+3. **Are the standard statistical tests appropriate for this data?** A single-run pretraining experiment cannot use paired t-tests. Multiple classification runs can. Choose methods that match the data structure.
+4. **What comparison dimensions are meaningful?** Examples (use only if relevant):
+   - Compute-equivalent comparison (same FLOPs or wall-clock time) — critical for efficiency claims
+   - Learning curves (loss vs. tokens and loss vs. time) — critical for convergence claims
+   - Downstream benchmarks — critical for generalization claims
+   - Efficiency profiling (throughput, memory, parameter overhead) — critical for practical deployment claims
+   - Cross-architecture or cross-scale consistency — critical for generalizability claims
+5. **What does the evaluate.py actually support?** Read `src/evaluation/evaluate.py`. If downstream benchmarks are stub-only, note this as a limitation rather than fabricating results.
+
+Write your analysis plan as the first section of `ANALYSIS.md` before executing it. This ensures the analysis is driven by the research question, not by a generic template.
+
 ### Step 1: Collect All Results
 
 Gather metrics from:
 - `results/{node_id}/metrics.json` for all completed nodes
 - Baseline results from BASELINES.md
 - Ablation results from Stage 4.4
+- Training logs (`train_log.jsonl`) for any time-series analysis identified in Step 0
 
 Organize into a master results table with all methods and all metrics.
 
-### Step 2: Statistical Significance Tests
+### Step 2: Statistical Significance Tests (if applicable)
 
-For each main comparison (proposed method vs. each baseline):
+Choose statistical methods that match the data structure (determined in Step 0):
 
-**Paired t-test** (if multiple test instances):
-- Null hypothesis: no difference in performance
-- Report: t-statistic, p-value, degrees of freedom
-- Significance threshold: p < 0.05
+**If you have multiple independent runs per method** (e.g., different seeds):
+- Paired t-test: report t-statistic, p-value, degrees of freedom
+- Bootstrap 95% confidence intervals (10,000 resamples)
+- Cohen's d effect size
 
-**Bootstrap confidence intervals** (95%):
-- 10,000 bootstrap resamples
-- Report: mean, 95% CI lower bound, 95% CI upper bound
-- For the primary metric and key secondary metrics
+**If you have single runs** (e.g., one pretraining per method):
+- Do NOT run paired t-tests — they require multiple samples
+- Instead: report point estimates with training variance (loss fluctuation in final N steps)
+- Use qualitative comparisons: learning curves, compute-equivalent crossover points
+- Be explicit that single-run results are indicative, not statistically conclusive
 
-**Effect size**:
-- Cohen's d for each comparison
-- Practical significance assessment
+**If you have downstream benchmark scores** (e.g., from lm-eval-harness):
+- These typically provide per-instance predictions — bootstrap CI is valid here
+- Report accuracy with 95% CI for each benchmark
+
+Always report what tests you chose and why. Never apply a statistical test just because the template mentions it.
 
 Write code to compute these and save results:
 ```python
