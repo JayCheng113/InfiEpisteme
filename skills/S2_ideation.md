@@ -25,9 +25,21 @@ You generate research hypotheses, subject them to multi-perspective debate, scor
 
 ## Process
 
+### Step 0: Determine What Experimental Design This Research Needs
+
+Before generating hypotheses or designing experiments, read `RESEARCH_PROPOSAL.md`, `RELATED_WORK.md`, `config.yaml` (target venue, compute budget), and `hardware_profile.json`. Then answer:
+
+1. **What type of paper is this?** A method paper (propose something new), a benchmark paper (systematic comparison), a negative result paper (X doesn't work and here's why), or a hybrid? The experimental design depends entirely on this.
+2. **What would a reviewer at {target_venue} need to see?** A method paper needs strong baselines and ablations. A benchmark paper needs controlled conditions across multiple axes (architectures, scales). An analysis paper needs depth over breadth.
+3. **How many independent variables can the budget support?** Compute `available_hours / estimated_hours_per_run` to get max experiments. Design within this constraint, not over it.
+4. **What comparison axes matter for this specific claim?** Not all research needs multiple architectures or scales. A method paper comparing two specific approaches might only need one architecture at one scale with thorough ablation. A generalizability claim needs multiple.
+5. **What are the minimum experiments needed to support the paper's core claim?** Start from the claim, work backward to the experiments — don't start from a template.
+
+Write your answers as the first section of `EXPERIMENT_PLAN.md`. The experiment tree design below should follow from these answers, not from a fixed formula.
+
 ### Step 1: Generate Hypotheses
 
-From the literature gap identified in RELATED_WORK.md, generate **5 concrete hypotheses**. Each hypothesis must be:
+From the literature gap identified in RELATED_WORK.md, generate **up to 5 concrete hypotheses** (fewer is fine if the research question is narrow). Each hypothesis must be:
 - **Testable**: can be verified or falsified by an experiment
 - **Specific**: names the method, dataset, and expected outcome
 - **Grounded**: motivated by a gap in the literature
@@ -106,9 +118,9 @@ Where Impact = average of (theoretical soundness + measurability) / 2, adjusted 
 
 Rank all 5 hypotheses by composite score.
 
-### Step 4: Select Top-2
+### Step 4: Select Hypotheses for Testing
 
-Select the top-2 hypotheses for experimental investigation. Justify:
+Select the top hypotheses for experimental investigation (typically 2, but adjust based on Step 0 — a focused method paper may need only 1, a broad benchmark may need 3+). Justify:
 - Why these two (not others)
 - How they complement each other (ideally, they test different aspects)
 - What the fallback is if both fail
@@ -117,7 +129,7 @@ Record this decision in `.ai/evolution/decisions.md` as ADR-002.
 
 ### Step 5: Design Experiment Tree
 
-For each selected hypothesis, create **N=3 root nodes** (6 total). Each root node is a different concrete instantiation of the hypothesis.
+For each selected hypothesis, create root nodes (the number depends on your Step 0 analysis — a systematic comparison might need 6+, a focused ablation study might need 3). Each root node is a different concrete instantiation of the hypothesis.
 
 **CRITICAL: One node = one training run.** Each node must correspond to exactly ONE model trained with ONE configuration. If a hypothesis requires comparing N methods, create N separate nodes — do NOT pack multiple training runs into a single node. Example:
 - WRONG: `H1_R1: "Compare PreNorm, AttnRes, DCA, MUDDFormer"` (4 training runs in 1 node)

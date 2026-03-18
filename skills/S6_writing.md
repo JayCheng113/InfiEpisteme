@@ -37,6 +37,21 @@ You write a complete research paper in LaTeX, section by section, then compile t
 
 ## Process
 
+### Phase 0: Determine What Story the Data Supports
+
+Before planning or writing anything, read `ANALYSIS.md` and `RESULTS_SUMMARY.md` carefully. Then answer:
+
+1. **What is the single most important finding?** Not what you hoped to find — what the data actually shows.
+2. **What type of paper does the data support?**
+   - Strong positive result → "We propose X, which outperforms Y because Z"
+   - Mixed result → "Under conditions A, X works; under B, Y works — here's why"
+   - Negative/null result → "Contrary to expectation, X does not improve over Y — analysis reveals Z"
+   - Benchmark/empirical study → "We provide the first controlled comparison of methods A-F and find..."
+3. **What claims can you actually make?** List only claims directly supported by your experimental evidence. Do not claim more than the data shows.
+4. **What is the narrative arc?** Problem → gap → approach → results → insight. The arc depends on the findings, not on a template.
+
+The paper structure below is a starting point. Adapt it based on your answers — a negative result paper emphasizes analysis over method description; a benchmark paper emphasizes experimental setup and fairness over novelty.
+
 ### Phase 1: Plan
 
 Before writing any LaTeX, create a paper plan:
