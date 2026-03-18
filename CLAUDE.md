@@ -29,6 +29,8 @@ Before starting any task, read the relevant documents from `.ai/`.
 | skills/references/impl-trl.md | TRL fine-tuning: SFT, DPO, PPO, GRPO (S4) |
 | skills/references/impl-lm-eval.md | lm-evaluation-harness for benchmarking (S5) |
 | skills/references/writing-guide.md | ML paper writing best practices (S6) |
+| skills/references/academic-writing-style.md | Word choice, hedging, tense usage, common errors (S6) |
+| skills/references/latex-debugging.md | LaTeX error patterns, silent failures, long-form rules (S6) |
 | skills/references/reviewer-guidelines.md | Reviewer criteria and rebuttal strategy (S7) |
 | templates/checklists/*.md | Venue-specific submission checklists (NeurIPS, ICML, ICLR, ACL, generic) |
 

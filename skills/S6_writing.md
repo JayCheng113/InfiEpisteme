@@ -25,6 +25,8 @@
 
 ### Writing References
 - **ML paper writing best practices**: Read `skills/references/writing-guide.md` for narrative principles, abstract formula, and writing style
+- **Academic writing style**: Read `skills/references/academic-writing-style.md` for word choice, hedging, tense usage, and common errors
+- **LaTeX debugging**: Read `skills/references/latex-debugging.md` for error patterns, silent failures, package load order, and long-form document rules
 - **Citation verification protocol**: Read `skills/references/citation-verification.md` (already required)
 
 ### Idempotency Check
@@ -157,15 +159,11 @@ cd paper && pdflatex -interaction=nonstopmode main.tex 2>&1 | tail -20
 ```
 
 If compilation fails:
-1. Read the **last 20 lines** of output — the actual error is usually near the end.
-2. Common LaTeX errors and fixes:
-   - `Undefined control sequence` → missing `\usepackage` or typo in command name
-   - `Missing $ inserted` → math outside math mode, or unescaped `_` / `%` / `&`
-   - `Extra alignment tab` → wrong number of `&` in tabular
-   - `Environment ... undefined` → missing package (e.g., `algorithm2e`, `subcaption`)
-   - `Missing \begin{document}` → encoding issue or stray character before preamble
-3. Fix the error in the section file, recompile.
-4. Only proceed to the next section after this one compiles cleanly.
+1. Search for `!` in the output or log file — these are actual errors (the rest is noise).
+2. Fix the **first** error only, then recompile — early errors cascade into false errors downstream.
+3. Consult `skills/references/latex-debugging.md` for the 20 most common errors and silent failures.
+4. Watch for **silent failures** that compile but produce wrong output: angle brackets as `¡¿`, empty bibliography, misplaced figures.
+5. Only proceed to the next section after this one compiles cleanly.
 
 This catches errors immediately when context is fresh, rather than debugging a pile of errors at the end.
 
