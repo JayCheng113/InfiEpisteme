@@ -63,7 +63,9 @@ Every skill file is a natural language instruction. When something goes wrong, y
 | "This hypothesis has no evidence" | S2: Added `evidence_basis: speculative` label requirement |
 | "The node packed 6 training runs" | S2: Added "one node = one training run" rule |
 | "500M tokens is too much for preliminary" | S4: Added "S4.1 uses 100-200M tokens" limit |
+| "experiment_tree.json never updates" | S4: Added "set status to running BEFORE training" step |
 | "Only one architecture isn't convincing" | Added Pythia arch support; redesigned S4.1 as cross-architecture screening |
+| "Training restarted and lost 2h of logs" | S4/common: Added "never overwrite results, back up with timestamp" rule |
 
 **The pipeline's instructions are its weights. Natural language is the gradient. Conversation is the training loop.**
 
@@ -222,7 +224,7 @@ P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → S4 → S5 �
 | **S7** | Cross-model adversarial review (Claude writes, GPT reviews) | `reviews/` |
 | **S8** | Package deliverables, venue-specific checklist | `DELIVERY/` |
 
-**9 stages, only 2 need human input.** The rest run fully automated.
+**10 stages (P0 + S0-S8), only 2 need human input.** The rest run fully automated.
 
 ## Safety & Quality
 
@@ -301,9 +303,10 @@ echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc && source ~/.bashrc
 
 **Optional — unattended mode**:
 ```bash
-./run.sh start     # runs pipeline, pauses at checkpoints
-./run.sh approve   # approve checkpoint and continue
-./run.sh status    # check progress
+./run.sh start                        # runs pipeline, pauses at checkpoints
+./run.sh approve                      # approve checkpoint and continue
+./run.sh approve --with 'add Pythia'  # approve with modifications
+./run.sh status                       # check progress
 ```
 
 **Optional MCP servers** for enhanced paper search:
