@@ -78,6 +78,10 @@ run.sh (main loop)
 - **templates/checklists/** — venue-specific submission checklists (NeurIPS, ICML, ICLR, ACL, generic)
 - **PIPELINE.md** — state machine definition (expected outputs and judge criteria per stage)
 
+## Working Principle
+
+Use first-principles thinking. Do not assume I always know exactly what I want or how to get it. Stay careful and reason from the underlying need and the actual problem. When my motivation or goal is unclear, pause and discuss it with me. When the goal is clear but the path is not the shortest or most effective, point that out and suggest a better approach.
+
 ## Rules
 
 1. Every skill reads .ai/ before working. The Memory Synthesizer updates .ai/ after each stage.
