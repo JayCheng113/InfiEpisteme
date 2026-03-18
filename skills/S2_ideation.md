@@ -35,12 +35,18 @@ From the literature gap identified in RELATED_WORK.md, generate **5 concrete hyp
 
 Format for each:
 ```
-H{N}: {One-sentence hypothesis}
+H{N}: {One-sentence hypothesis — phrased as a question if unverified}
 - Motivation: {Why this hypothesis is worth testing, citing the gap}
 - Approach: {How to test it — 2-3 sentences}
 - Expected outcome: {What you expect to observe if true}
 - Risk: {What could go wrong}
+- Evidence basis: {empirical | theoretical | speculative}
+  - empirical: supported by published experimental data (cite the paper)
+  - theoretical: grounded in formal theory but no direct experiments
+  - speculative: LLM reasoning without literature support — FLAG THIS CLEARLY
 ```
+
+**Anti-hallucination rule for hypotheses**: If your hypothesis makes a claim about how a method performs (e.g., "X underperforms on Y"), you MUST cite the specific paper and result that supports this. If no such evidence exists, mark the hypothesis as `speculative` and phrase it as a question ("Does X underperform on Y?"), not an assertion. Reviewers and the Judge will reject assertions presented as fact without evidence.
 
 ### Step 2: Multi-Perspective Debate
 
