@@ -32,6 +32,40 @@ CC:  [searches web, finds paper, identifies 5 competing methods]
 
 **Key advantage**: You command one local Claude Code, which commands multiple Claude Code instances on the server — and actively monitors, diagnoses, and hotfixes along the way.
 
+## Self-Evolving Pipeline
+
+InfiEpisteme improves itself through natural language — no RL, no code rewrites, no retraining.
+
+```
+     Run pipeline
+          │
+          ▼
+     Observe problems ◄─── "S1 only found 21 citations, need 30"
+          │
+          ▼
+     Discuss with CC  ◄─── "The regex doesn't match 'et al.' format"
+          │
+          ▼
+     CC updates .md   ◄─── S1_literature.md: "Web Search is Source 1, not fallback"
+          │                 state_guard.py: fix regex
+          ▼                 S2_ideation.md: "speculative hypotheses must be questions"
+     Next run is better
+          │
+          └──► repeat
+```
+
+Every skill file is a natural language instruction. When something goes wrong, you tell CC what happened, and it rewrites the instruction to prevent the same mistake. Real examples from our first run:
+
+| You said | CC improved |
+|----------|------------|
+| "Why only 21 citations?" | S1: Web Search promoted to primary source; added "run second pass if < 30" |
+| "This hypothesis has no evidence" | S2: Added `evidence_basis: speculative` label requirement |
+| "The node packed 6 training runs" | S2: Added "one node = one training run" rule |
+| "500M tokens is too much for preliminary" | S4: Added "S4.1 uses 100-200M tokens" limit |
+| "experiment_tree.json never updates" | S4: Added "set status to running BEFORE training" step |
+
+**The pipeline's instructions are its weights. Natural language is the gradient. Conversation is the training loop.**
+
 ## Architecture
 
 ```
