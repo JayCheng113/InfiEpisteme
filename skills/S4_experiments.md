@@ -71,7 +71,7 @@ Write your Step 0 analysis as a brief note at the top of `RESULTS_SUMMARY.md` be
 
 **State consistency check between sub-stages** (REQUIRED):
 - Verify `winner` fields in experiment_tree.json match the methods that ACTUALLY advance to the next sub-stage per EXPERIMENT_PLAN.md. If the plan was revised (e.g., methods dropped/replaced), winners may be stale. Fix before creating child nodes.
-- Verify `hardware_profile.json` → `recommendations.throughput_reference` reflects measured throughput from the COMPLETED sub-stage (not estimates from initial hardware detection). Stale throughput data causes wrong budget calculations.
+- Update `hardware_profile.json` → `recommendations.throughput_reference` with measured throughput from the COMPLETED sub-stage. S4 is the only stage that runs full training and can provide accurate numbers. Stale throughput estimates from S0 hardware detection lead to wrong budget calculations for later sub-stages.
 - Verify the training script's invocation command works: `python -m src.train --help` (or equivalent). If the script uses package imports, `python3 src/train.py` will fail with ImportError.
 
 ### Stage 4.1: Preliminary Investigation
@@ -91,7 +91,7 @@ Write your Step 0 analysis as a brief note at the top of `RESULTS_SUMMARY.md` be
 3. **For each root node**, execute the experiment:
 
    **Via SSH MCP** (if `config.yaml` has `mcp.ssh_remote: true`):
-   - Use `mcp__ssh__execute_command` to submit: `nohup python3 src/train.py --config configs/{id}.yaml > results/{id}/logs/train.log 2>&1 &`
+   - Use `mcp__ssh__execute_command` to submit: `cd /path/to/project && nohup python -m src.train --config configs/{id}.yaml > results/{id}/logs/train.log 2>&1 &`
    - Poll via `mcp__ssh__execute_command`: `cat results/{id}/metrics.json 2>/dev/null`
 
    **Via Python scripts** (fallback):

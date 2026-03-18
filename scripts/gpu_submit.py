@@ -40,6 +40,7 @@ def main():
     parser.add_argument("--config", required=True, help="Path to config JSON")
     parser.add_argument("--gpu-type", default=None, help="GPU type override")
     parser.add_argument("--mode", default="local", choices=["local", "slurm"], help="Execution mode")
+    parser.add_argument("--resume", action="store_true", help="Resume from checkpoint")
     args = parser.parse_args()
 
     config = load_config()
@@ -56,8 +57,9 @@ def main():
             "sbatch", "--job-name", f"infi-{args.node}",
             "--output", str(log_file),
             "--gres", f"gpu:{gpu_type}:1",
-            "python3", args.script, "--config", args.config,
-            "--output-dir", str(results_dir),
+            "python3", "-m", str(Path(args.script).with_suffix("")).replace("/", "."),
+            "--config", args.config,
+            *(["--resume"] if args.resume else []),
         ]
         result = subprocess.run(slurm_cmd, capture_output=True, text=True)
         if result.returncode != 0:
@@ -67,10 +69,20 @@ def main():
     else:
         # Local subprocess
         log_fh = open(log_file, "w")
+        # Convert package-style paths (src/train.py -> -m src.train) to avoid ImportError
+        script_path = Path(args.script)
+        if script_path.parts[0] == "src" and script_path.suffix == ".py":
+            module = str(script_path.with_suffix("")).replace("/", ".")
+            cmd = [sys.executable, "-m", module, "--config", args.config]
+        else:
+            cmd = [sys.executable, args.script, "--config", args.config]
+        if args.resume:
+            cmd.append("--resume")
         proc = subprocess.Popen(
-            ["python3", args.script, "--config", args.config, "--output-dir", str(results_dir)],
+            cmd,
             stdout=log_fh,
             stderr=subprocess.STDOUT,
+            cwd=str(ROOT),
         )
         job_id = str(proc.pid)
 

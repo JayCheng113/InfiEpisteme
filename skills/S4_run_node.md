@@ -90,16 +90,17 @@ git commit -m "research(protocol): {node_id} — {approach_description}"
 ```bash
 python3 scripts/gpu_submit.py \
   --node {node_id} \
-  --script src/train.py \
+  --script {training_script} \
   --config {config_path} \
   --gpu-type {gpu_type}
 ```
-(gpu_submit.py auto-converts `src/train.py` to `python -m src.train` for package imports.)
+Note: gpu_submit.py auto-converts package-style script paths (e.g., `src/train.py` → `python -m src.train`) to avoid ImportError from package-relative imports. It also supports `--resume` for checkpoint recovery.
 
 **Via direct execution** (simplest for local GPU):
 ```bash
-nohup python -m src.train --config {config_path} --node_id {node_id} > results/{node_id}/train.log 2>&1 &
+nohup python -m {training_module} --config {config_path} --node_id {node_id} > results/{node_id}/train.log 2>&1 &
 ```
+Determine the correct module path from README_code.md or the training script's docstring (e.g., `src.train` for `src/train.py`).
 
 Record the returned `job_id` or PID.
 
@@ -137,7 +138,7 @@ On failure:
    - **Code bug**: runtime error — debug and fix
    - **Timeout**: experiment too slow — optimize or reduce scope
 3. Log to `.ai/evolution/negative-results.md`.
-4. If fixable: apply fix and re-submit (max 2 retries per node). **If a checkpoint exists** (`checkpoints/{node_id}/resume.pt`), use `--resume` to continue from the last eval checkpoint rather than restarting from scratch.
+4. If fixable: apply fix and re-submit (max 2 retries per node). **If `resume.pt` exists** in the node's checkpoint directory (see `train_cfg.checkpoint_dir` / node_id), use `--resume` to continue from the last eval checkpoint rather than restarting from scratch.
 5. If unfixable: mark node as `buggy` with detailed notes.
 
 ### Step 7: Generate Figures
@@ -213,7 +214,7 @@ Update the node in experiment_tree.json:
 
 - Fix all random seeds before execution for reproducibility.
 - Save checkpoints for experiments > 30 minutes.
-- **Checkpoint resume for long runs**: Experiments > 1 hour MUST use a training script that supports `--resume`. A single `resume.pt` (overwritten each eval) is sufficient — do not accumulate checkpoints that fill disk. `resume.pt` is automatically deleted after successful completion.
+- **Checkpoint resume for long runs**: Experiments > 1 hour MUST use a training script that supports `--resume`. A single `resume.pt` in the node's checkpoint directory (overwritten each eval) is sufficient — do not accumulate checkpoints that fill disk. `resume.pt` is automatically deleted after successful completion.
 - Never modify another node's results.
 - If a node takes > 2x estimated time, investigate before waiting longer.
 - Always validate results before marking as complete (no NaN, reasonable range).

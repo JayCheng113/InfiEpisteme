@@ -260,7 +260,7 @@ This summary is the primary artifact for user review before training starts.
 
 These rules prevent silent failures when S4 launches training:
 
-1. **Invocation compatibility**: If the training script uses package-relative imports (`from src.utils.X import ...`), it MUST be invoked as `python -m src.train`, NOT `python3 src/train.py`. Document the correct invocation in README_code.md and in the script's docstring. Verify it works: `python -m {module} --help` must succeed.
+1. **Invocation compatibility**: Verify the training script's invocation matches the rules in `_common.md` (Script Interface Consistency). Document the correct invocation in README_code.md and in the script's docstring. Verify it works: `python -m {module} --help` (or equivalent) must succeed.
 
 2. **CLI argument compatibility with `scripts/gpu_submit.py`**: The training script must accept at minimum `--config PATH`. It must NOT require arguments that gpu_submit.py does not pass (e.g., `--output-dir`). The results directory should be derived from `node_id` inside the config, not from a CLI argument.
 
@@ -272,7 +272,7 @@ These rules prevent silent failures when S4 launches training:
 
 4. **Verify end-to-end before marking runnable**: For each root node, run the EXACT command that S4 will use (including `python -m` module path, the actual config file, and a `--max_tokens` override for a short test). A node is NOT runnable if only `python3 src/script.py` was tested but S4 will use `python -m src.script`.
 
-5. **Update hardware_profile.json after verification**: After smoke-testing all methods, update `hardware_profile.json` → `recommendations.throughput_reference` with measured tok/s per method. Stale throughput estimates from initial hardware detection lead to wrong budget calculations in S4.
+5. **Record measured throughput in experiment_tree.json**: After smoke-testing all methods, record measured tok/s per method in each node's metadata (e.g., `throughput_tok_s` field) or in `README_code.md`'s Implementation Summary. S4 uses these for budget calculations. Do NOT update `hardware_profile.json` directly (it is owned by S0_hardware.md).
 
 ## When Done
 
