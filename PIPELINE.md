@@ -94,12 +94,12 @@ expected_ai_updates:
   - .ai/core/methodology.md
   - .ai/evolution/decisions.md
 registry_fields:
-  hypotheses_selected: ">= 2"
-  root_nodes: ">= 6"
+  hypotheses_selected: ">= 1"
+  root_nodes: ">= 3"
 ```
 
 **Judge criteria**:
-- Layer 1: ≥2 hypotheses selected; experiment tree has ≥6 root nodes; each node has success metric
+- Layer 1: Hypotheses selected (count justified by Step 0 analysis); experiment tree has root nodes; each node has success metric
 - Layer 2: Multi-perspective critique completed (6 viewpoints); hypotheses genuinely different
 - Layer 3: Are hypotheses testable questions or disguised assertions? Does each node test exactly one thing? Is total compute budget feasible? Would one architecture suffice for the claimed conclusion?
 

@@ -11,7 +11,7 @@
 | make | construct, generate, produce |
 | do | perform, conduct, execute |
 | get | obtain, achieve, derive |
-| use | employ, utilize, leverage |
+| use | employ, apply, adopt |
 | show | demonstrate, illustrate, reveal |
 | find | discover, identify, observe |
 

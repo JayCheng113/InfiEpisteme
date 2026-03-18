@@ -62,7 +62,7 @@ H{N}: {One-sentence hypothesis — phrased as a question if unverified}
 
 ### Step 2: Multi-Perspective Debate
 
-Evaluate all 5 hypotheses from 6 different viewpoints. You adopt each perspective in turn, producing a structured critique. This is a single-agent process — you simulate each perspective.
+Evaluate all generated hypotheses from 6 different viewpoints. You adopt each perspective in turn, producing a structured critique. This is a single-agent process — you simulate each perspective.
 
 **Perspective 1: Innovator**
 Focus: novel combinations, creative leaps, unexplored connections.
@@ -121,7 +121,7 @@ Rank all 5 hypotheses by composite score.
 ### Step 4: Select Hypotheses for Testing
 
 Select the top hypotheses for experimental investigation (typically 2, but adjust based on Step 0 — a focused method paper may need only 1, a broad benchmark may need 3+). Justify:
-- Why these two (not others)
+- Why these (not others)
 - How they complement each other (ideally, they test different aspects)
 - What the fallback is if both fail
 
@@ -231,8 +231,8 @@ Populated with 6 root nodes as described above.
 
 ## Quality Criteria (from PIPELINE.md)
 
-- [ ] >= 2 hypotheses selected with feasibility/novelty/impact scores
-- [ ] Experiment tree has >= 6 root nodes (N=3 per hypothesis)
+- [ ] Hypotheses selected with feasibility/novelty/impact scores (count justified by Step 0 analysis; typically >= 2 but 1 is acceptable for focused method papers)
+- [ ] Experiment tree has root nodes matching Step 0 design (count justified by research question and budget; typically >= 6 but fewer is acceptable with explicit justification)
 - [ ] Each node has clear success metric and approach description
 - [ ] Multi-perspective critique completed (6 viewpoints documented)
 

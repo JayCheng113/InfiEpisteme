@@ -11,7 +11,7 @@ LaTeX errors follow a 3-line structure:
 
 **Find errors in log**: `grep "^!" paper/main.log`
 
-## 20 Most Common Errors
+## Common Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
