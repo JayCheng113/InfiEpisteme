@@ -60,23 +60,23 @@ S6: Writing → S7: Review-Revise → S8: Delivery
 ## Architecture (v2.1 — .md-native + MCP)
 
 ```
-run.sh (主循环)
-  ├── claude -p "skills/S0_hardware.md" → 硬件检测（首次运行）
-  ├── scripts/parse_state.py → 确定当前 stage
-  ├── claude -p "skills/S{N}.md" → 执行 stage（MCP 优先，Python fallback）
-  ├── scripts/state_guard.py verify → 验证输出存在
-  ├── claude -p "skills/memory_sync.md" → 记忆整合（.ai/ 更新）
-  ├── scripts/state_guard.py verify → 验证记忆质量
-  ├── claude -p "skills/judge.md" → 3 层审查（确定性检查 → 内容质量 → 第一性原理）
-  └── scripts/state_guard.py advance → 推进/重试
+run.sh (main loop)
+  ├── claude -p "skills/S0_hardware.md" → hardware detection (first run only)
+  ├── scripts/parse_state.py → determine current stage
+  ├── claude -p "skills/S{N}.md" → execute stage (MCP-first, Python fallback)
+  ├── scripts/state_guard.py verify → verify outputs exist
+  ├── claude -p "skills/memory_sync.md" → memory consolidation (.ai/ updates)
+  ├── scripts/state_guard.py verify → verify memory quality
+  ├── claude -p "skills/judge.md" → 3-layer review (deterministic → content → first-principles)
+  └── scripts/state_guard.py advance → advance or retry
 ```
 
-- **skills/** — 18 个 .md skill 文件 + 2 个 reference 文件，Claude Code native 执行
-- **MCP servers** — Semantic Scholar、System Monitor、SSH（Python scripts 作为 fallback）
-- **scripts/** — 极简 Python CLI 工具（state_guard, GPU, cross-review, scholarly）
-- **state/** — 运行时状态文件（JSON）+ hardware_profile.json
-- **templates/checklists/** — 会议特定提交 checklist（NeurIPS, ICML, ICLR, ACL, generic）
-- **PIPELINE.md** — 状态机定义（每 stage 的预期输出和 judge 标准）
+- **skills/** — 18 .md skill files + reference files, executed natively by Claude Code
+- **MCP servers** — Semantic Scholar, System Monitor, SSH (Python scripts as fallback)
+- **scripts/** — minimal Python CLI tools (state_guard, GPU, cross-review, scholarly)
+- **state/** — runtime state files (JSON) + hardware_profile.json
+- **templates/checklists/** — venue-specific submission checklists (NeurIPS, ICML, ICLR, ACL, generic)
+- **PIPELINE.md** — state machine definition (expected outputs and judge criteria per stage)
 
 ## Rules
 
