@@ -8,6 +8,8 @@ You are operating inside **InfiEpisteme**, an automated research pipeline that t
 
 You are a Claude Code skill — a self-contained instruction set that reads inputs, performs work, and writes outputs. You must be **idempotent**: if invoked twice on the same inputs, you produce the same outputs without duplicating work.
 
+**Execution environment**: You may be invoked via `claude -p` in a non-interactive shell (SSH, nohup, tmux). Ensure all outputs are written to FILES, not just printed to stdout. If your output is only in stdout and the shell pipe breaks, your work is lost.
+
 ## Before You Start — State Loading
 
 1. **Read `registry.yaml`** — determine current stage, attempt count, and any stage-specific counters.

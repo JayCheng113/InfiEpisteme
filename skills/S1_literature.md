@@ -43,24 +43,26 @@ From RESEARCH_PROPOSAL.md, create 12-16 search queries covering:
    - Search for "{topic} benchmark 2025 2026"
 8. Alternative terminology for the same concepts
 
-### Step 2: Search Semantic Scholar
+### Step 2: Search for Papers
 
-For each query, use MCP if available, fallback to script:
+**Known issue**: Semantic Scholar API frequently returns 429 (rate limit) or has indexing lag for papers < 6 months old. **Do NOT rely solely on Semantic Scholar.** Use a multi-source strategy from the start:
 
-**MCP (preferred)**:
+**Source 1: Web Search (most reliable for recent papers)**:
+- Use `WebSearch` tool with queries like `"{topic}" arxiv 2025 2026`
+- This is often the ONLY way to find papers published in the last few months
+- Extract paper titles, authors, years from search results
+
+**Source 2: Semantic Scholar MCP** (if available and not rate-limited):
 - Use `mcp__semantic-scholar__search_papers` with the query. Request up to 20 results per query.
 
-**Fallback**:
+**Source 3: Semantic Scholar script** (fallback):
 ```bash
 python3 scripts/scholarly_search.py search "<query>" --limit 20
 ```
 
 Collect all unique papers. De-duplicate by title/DOI. Target: 50+ candidate papers.
 
-If both MCP and script fail or return too few results:
-- Try rephrased queries.
-- Fall back to web search for recent papers.
-- Log the limitation but continue.
+**If you reach < 30 papers after all queries**: This is expected for niche or very new topics. Run a SECOND pass with broader queries (e.g., the parent field, foundational methods, survey papers). The 30-paper requirement can be met by including foundational work and related subfields — it does not all need to be directly on the exact topic.
 
 ### Step 3: Search arXiv and Recent Sources (MANDATORY)
 
