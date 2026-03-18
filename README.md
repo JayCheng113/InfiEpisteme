@@ -93,7 +93,7 @@ Every skill file is a natural language instruction. When something goes wrong, y
 │   │  │       Layer 3: first-principles reasoning                     │    │
 │   │  │  ssh: state_guard.py advance         ──► next stage or retry  │    │
 │   │  │                                                                 │    │
-│   │  │  [CHECKPOINT at P0, S2] ──► pause for human review            │    │
+│   │  │  [CHECKPOINT at P0, S2, S3?] ──► pause for human review       │    │
 │   │  │       Fixed checklist (targets known failure modes)            │    │
 │   │  │       + LLM adversarial brief (supplements)                   │    │
 │   │  │       + Raw file access (fallback)                            │    │
@@ -188,7 +188,7 @@ compute:
 You: SSH to ubuntu@gpu-box, go to ~/InfiEpisteme, and start the research pipeline.
 ```
 
-Your local CC will read config.yaml, run each stage via `claude -p`, check results, and report back. At checkpoints (P0, S2), it pauses for your review.
+Your local CC will read config.yaml, run each stage via `claude -p`, check results, and report back. At checkpoints (P0, S2, and conditionally S3 for novel methods), it pauses for your review.
 
 **Option B: Unattended** — Run directly on the server:
 ```bash
@@ -214,7 +214,7 @@ CC:  Got it. I'll write config.yaml with this direction and set up the pipeline.
      [SSHs to server, writes config.yaml, starts P0]
 ```
 
-### 2. Pipeline runs, pauses at two checkpoints
+### 2. Pipeline runs, pauses at checkpoints
 
 ```
      ── CHECKPOINT: P0 (research direction) ──
@@ -233,7 +233,17 @@ CC:  [updates proposal, continues to S1-S2]
           3. Any missing baselines?
 
 You: Go.
-CC:  [runs S3-S8 fully automated, reports when done]
+CC:  [runs S3, implements all methods]
+
+     ── CHECKPOINT: S3 (only if you proposed a novel method) ──
+     CC:  Implementation complete. Your DPE-AttnRes method:
+          - depth_scale initialized at 0.01 (learnable, ReZero-style)
+          - Invariant verified: reduces to vanilla AttnRes when scale=0 ✓
+          - 341.9M params, 14.5 GB peak memory
+          Approve to start training?
+
+You: Go.
+CC:  [runs S4-S8 fully automated, reports when done]
 ```
 
 ### 3. Monitor anytime
@@ -258,7 +268,7 @@ CC:  S1 failed: only 21 citations detected (need 30).
 ## Pipeline Stages
 
 ```
-P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → S4 → S5 → S6 → S7 → S8
+P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → [CHECKPOINT?] → S4 → S5 → S6 → S7 → S8
  │                                │                  │                           │
  direction                    experiment          fully automated            delivery
  (human reviews)              design              (code, train,
@@ -275,19 +285,21 @@ P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → S4 → S5 �
 | **S2** | 6-perspective hypothesis debate, experiment design | `EXPERIMENT_PLAN.md`, `experiment_tree.json` |
 | | **[CHECKPOINT]** — human reviews design, verifies budget, checks baselines | |
 | **S3** | Implement methods + baselines | `src/`, `requirements.txt` |
+| | **[CHECKPOINT?]** — triggers if novel methods exist; human reviews implementation details | |
+| **S3** | Implement methods + baselines | `src/`, `requirements.txt` |
 | **S4** | Progressive tree search (4 sub-stages, 6+ experiments) | `RESULTS_SUMMARY.md`, `results/` |
 | **S5** | Statistical analysis, 6-perspective interpretation | `ANALYSIS.md`, `tables/`, `figures/` |
 | **S6** | LaTeX paper with 5-step citation verification | `paper.pdf` |
 | **S7** | Cross-model adversarial review (Claude writes, GPT reviews) | `reviews/` |
 | **S8** | Package deliverables, venue-specific checklist | `DELIVERY/` |
 
-**10 stages (P0 + S0-S8), only 2 need human input.** The rest run fully automated.
+**10 stages (P0 + S0-S8), 2-3 need human input** (P0, S2, and S3 if you proposed a novel method). The rest run fully automated.
 
 ## Safety & Quality
 
 | Mechanism | What It Does |
 |-----------|-------------|
-| **Human checkpoints** | Pipeline pauses after P0 and S2 for human review — fixed checklist (targets known failure modes) + LLM adversarial brief + raw file access |
+| **Human checkpoints** | Pipeline pauses after P0, S2, and conditionally S3 (novel methods) for human review — fixed checklist + LLM adversarial brief + raw file access |
 | **3-Layer Judge** | Layer 1: deterministic checks. Layer 2: content quality. Layer 3: first-principles reasoning — challenges assumptions, catches factual errors, flags insufficient experimental design |
 | **Circuit breaker** | Same failure 3x → pauses for human input |
 | **State Guard** | Deterministic Python checks after every stage |

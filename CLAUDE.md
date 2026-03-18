@@ -54,12 +54,12 @@ After completing significant work, follow `.ai/_maintenance-rules.md`:
 ## Pipeline Stages
 
 ```
-[Hardware Detection] → P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 →
+[Hardware Detection] → P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → [CHECKPOINT?] →
 S4: Experiments (tree search) → S5: Analysis →
 S6: Writing → S7: Review-Revise → S8: Delivery
 
-[CHECKPOINT] = human review gate at P0 (direction) and S2 (design)
-              fixed checklist + LLM adversarial brief → ./run.sh approve
+[CHECKPOINT]  = human review gate at P0 (direction) and S2 (design)
+[CHECKPOINT?] = conditional gate at S3 — triggers if novel methods have design_spec
 ```
 
 ## Architecture (v2.1 — .md-native + MCP)
