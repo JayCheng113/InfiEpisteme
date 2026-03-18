@@ -18,6 +18,15 @@ This skill receives a `node_id` parameter identifying which node to execute. The
 
 ## Process
 
+### Step 0.5: Check GPU Availability
+
+Before starting any training, verify the GPU is not already occupied by other processes:
+```bash
+nvidia-smi --query-compute-apps=pid,name,used_memory --format=csv,noheader
+```
+- If other training processes are running: **STOP**. Report what is running and ask for guidance. Do not start training on a shared GPU — it will slow both jobs and may cause OOM.
+- If only small processes (< 500MB) are present: safe to proceed.
+
 ### Step 1: Prepare Execution
 
 1. Read the node's configuration from experiment_tree.json:
