@@ -286,7 +286,6 @@ P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → [CHECKPOINT
 | | **[CHECKPOINT]** — human reviews design, verifies budget, checks baselines | |
 | **S3** | Implement methods + baselines | `src/`, `requirements.txt` |
 | | **[CHECKPOINT?]** — triggers if novel methods exist; human reviews implementation details | |
-| **S3** | Implement methods + baselines | `src/`, `requirements.txt` |
 | **S4** | Progressive tree search (4 sub-stages, 6+ experiments) | `RESULTS_SUMMARY.md`, `results/` |
 | **S5** | Statistical analysis, 6-perspective interpretation | `ANALYSIS.md`, `tables/`, `figures/` |
 | **S6** | LaTeX paper with 5-step citation verification | `paper.pdf` |

@@ -1,24 +1,27 @@
 # Checkpoint — Human Review Gate
 
 > Generates a checkpoint document for human review at critical decision points.
-> Triggered after judge passes for P0 and S2.
+> Triggered after judge passes for P0, S2, and conditionally S3 (novel methods).
 
 ## When This Runs
 
-This skill runs after the judge passes for P0 or S2. It does NOT replace the judge — it adds a human review layer on top of the automated review.
+This skill runs after the judge passes for P0, S2, or S3 (when novel methods exist). It does NOT replace the judge — it adds a human review layer on top of the automated review.
 
 ## Input
 
-- `registry.yaml` — current stage (P0 or S2)
+- `registry.yaml` — current stage (P0, S2, or S3)
 - `state/JUDGE_RESULT.json` — judge's evaluation (already passed)
-- Stage outputs (RESEARCH_PROPOSAL.md for P0, EXPERIMENT_PLAN.md + experiment_tree.json for S2)
+- Stage outputs:
+  - P0: `RESEARCH_PROPOSAL.md`
+  - S2: `EXPERIMENT_PLAN.md`, `experiment_tree.json`
+  - S3: `README_code.md` (Implementation Summary), `src/`, `experiment_tree.json`
 - Fixed checklist template from `templates/checklists/checkpoint_{stage}.md`
 
 ## Process
 
 ### Step 1: Read the Fixed Checklist Template
 
-Read `templates/checklists/checkpoint_{stage}.md` where `{stage}` is P0 or S2.
+Read `templates/checklists/checkpoint_{stage}.md` where `{stage}` is P0, S2, or S3.
 
 ### Step 2: Generate Adversarial Brief
 

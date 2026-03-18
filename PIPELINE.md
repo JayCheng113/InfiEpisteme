@@ -127,7 +127,10 @@ registry_fields: {}
 - All root nodes in experiment_tree.json have status=runnable
 - Baselines implemented and verified against reported numbers (±5%)
 - Evaluation harness runs without errors on test data
-- README_code.md has reproduction instructions
+- README_code.md has reproduction instructions and Implementation Summary section
+- For nodes with `design_spec`: key decisions documented, invariants verified, constraints satisfied
+
+**Conditional checkpoint**: If any node has `design_spec`, pipeline pauses for human review of Implementation Summary before S4.
 
 ---
 

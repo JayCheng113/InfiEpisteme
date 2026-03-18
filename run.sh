@@ -206,14 +206,16 @@ print('done' if float(done) >= float(target) + 0.1 else 'pending')
 
 has_novel_methods() {
     # Check if experiment_tree.json has any nodes with design_spec
+    # On error (file missing/malformed), default to triggering checkpoint (safe side)
     python3 -c "
 import json, sys
 try:
     tree = json.load(open('experiment_tree.json'))
     has_spec = any(n.get('design_spec') for n in tree.get('nodes', []))
     sys.exit(0 if has_spec else 1)
-except:
-    sys.exit(1)
+except Exception as e:
+    print(f'WARNING: could not check design_spec: {e}', file=sys.stderr)
+    sys.exit(0)  # default to checkpoint on error (safer than skipping)
 " 2>/dev/null
 }
 

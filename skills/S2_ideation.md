@@ -162,7 +162,12 @@ Root node structure:
 }
 ```
 
-**For novel/proposed methods** (not reproducing a published paper), the `design_spec` field is REQUIRED:
+**For novel/proposed methods**, the `design_spec` field is REQUIRED. A method is "novel" if any of these apply:
+- It was proposed by the user or agent during this pipeline run (not from a published paper)
+- It combines elements from multiple published methods in a new way
+- It applies a published method to a significantly different domain or scale than originally tested
+
+When in doubt, include `design_spec` — the cost is a few extra lines in JSON; the cost of omitting it is a missed checkpoint before expensive training.
 ```json
 {
   "design_spec": {

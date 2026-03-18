@@ -73,8 +73,9 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] `src/models/` directory exists with method and baseline implementations
 - [ ] `src/evaluation/` directory exists with evaluate.py
 - [ ] `requirements.txt` exists
-- [ ] `README_code.md` exists
+- [ ] `README_code.md` exists and contains `## Implementation Summary` section
 - [ ] All root nodes in experiment_tree.json have status=runnable (or documented buggy)
+- [ ] For nodes with `design_spec`: each `key_decision` documented, each `invariant` verified
 
 #### S4 — Experiments
 - [ ] `RESULTS_SUMMARY.md` exists
