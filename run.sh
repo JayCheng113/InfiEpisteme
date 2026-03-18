@@ -204,10 +204,25 @@ print('done' if float(done) >= float(target) + 0.1 else 'pending')
     return 0
 }
 
+has_novel_methods() {
+    # Check if experiment_tree.json has any nodes with design_spec
+    python3 -c "
+import json, sys
+try:
+    tree = json.load(open('experiment_tree.json'))
+    has_spec = any(n.get('design_spec') for n in tree.get('nodes', []))
+    sys.exit(0 if has_spec else 1)
+except:
+    sys.exit(1)
+" 2>/dev/null
+}
+
 needs_human_checkpoint() {
-    # P0 and S2 require human review after judge passes
+    # P0 and S2: always checkpoint
+    # S3: checkpoint only if novel methods exist (have design_spec)
     case "$1" in
         P0|S2) return 0 ;;
+        S3)    has_novel_methods && return 0 || return 1 ;;
         *)     return 1 ;;
     esac
 }

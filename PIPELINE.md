@@ -6,9 +6,11 @@
 
 ## Stage Order
 
-[Hardware Detection] → P0 → **[CHECKPOINT]** → S0 → S1 → S2 → **[CHECKPOINT]** → S3 → S4 → S5 → S6 → S7 → S8 → COMPLETE
+[Hardware Detection] → P0 → **[CHECKPOINT]** → S0 → S1 → S2 → **[CHECKPOINT]** → S3 → **[CHECKPOINT?]** → S4 → S5 → S6 → S7 → S8 → COMPLETE
 
-**[CHECKPOINT]** = Human review gate. Pipeline pauses, generates a review document with fixed checklist + LLM adversarial brief, waits for `./run.sh approve` before continuing. Only at P0 (research direction) and S2 (experimental design) — the two points where errors cascade most.
+**[CHECKPOINT]** = Human review gate. Pipeline pauses, generates a review document with fixed checklist + LLM adversarial brief, waits for `./run.sh approve` before continuing. Fixed checkpoints at P0 (research direction) and S2 (experimental design).
+
+**[CHECKPOINT?]** = Conditional checkpoint. Triggers only when `experiment_tree.json` contains nodes with `design_spec` (novel/user-proposed methods). Pauses for user to review Implementation Summary in `README_code.md` before training starts. Skipped when all methods reproduce published papers.
 
 ### Hardware Detection (Pre-Stage)
 **Skill**: `S0_hardware.md`
