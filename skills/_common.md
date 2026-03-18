@@ -109,9 +109,17 @@ When invoked as a retry (state/JUDGE_RESULT.json shows failure):
 3. Focus your work on the failed criteria. Do not redo passing criteria.
 4. If the same criterion has failed 3+ times, add a detailed note to `.ai/evolution/negative-results.md` explaining the pattern and stop.
 
+## Self-Check: First-Principles Reasoning
+
+Before declaring your work done, pause and ask yourself:
+- **Am I making any factual claims I haven't verified?** If so, verify or label as speculative.
+- **Is this the most effective approach, or am I just following the instructions literally?** If there's a clearly better path, take it and document why.
+- **Would a critical reviewer find obvious flaws?** If so, fix them now rather than leaving them for the judge.
+- **Am I wasting resources?** (e.g., running more experiments than needed, generating unnecessary files)
+
 ## When Done
 
 Every skill must end by:
 1. Writing all expected output files.
 2. Reporting a brief summary of what was produced and any concerns.
-3. The orchestrator will then invoke `memory_sync.md` to consolidate knowledge into `.ai/`, followed by `judge.md` to evaluate your outputs.
+3. The orchestrator will then invoke `memory_sync.md` to consolidate knowledge into `.ai/`, followed by `judge.md` (with 3-layer evaluation including first-principles review) to evaluate your outputs.
