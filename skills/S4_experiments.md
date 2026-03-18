@@ -52,6 +52,23 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
 
 ## Process
 
+### Step 0: Determine What This Experiment Tree Search Needs
+
+Before following the default sub-stage templates below, read `EXPERIMENT_PLAN.md` and `experiment_tree.json`. The phase plan in EXPERIMENT_PLAN.md defines what each sub-stage should actually do for THIS specific research. The templates below (4.1-4.4) are defaults — override them when the phase plan specifies something different.
+
+Answer these questions:
+1. **What does the phase plan say each sub-stage should do?** If EXPERIMENT_PLAN.md defines Phase 4.2 as "cross-architecture validation on Pythia," do that — not the default "hyperparameter tuning."
+2. **Which sub-stages depend on previous results?** If Phase 4.3's design says "choose architecture based on 4.2 results," then after 4.2 completes, analyze the results and decide before proceeding. Do not follow a pre-determined plan blindly.
+3. **Does the budget still support the plan?** Recalculate after each sub-stage based on actual (not estimated) GPU hours consumed.
+
+Write your Step 0 analysis as a brief note at the top of `RESULTS_SUMMARY.md` before starting 4.1.
+
+**Decision points between sub-stages**: After each sub-stage completes, before starting the next:
+- Read the phase plan for the next sub-stage
+- If the plan says "decide based on results," analyze the results and record your decision in `.ai/evolution/decisions.md`
+- If the plan specifies a fixed design, follow it
+- If budget is insufficient for the planned next sub-stage, propose a reduced scope and note the trade-off
+
 ### Stage 4.1: Preliminary Investigation
 
 **Goal**: Run all root nodes with SHORT training to quickly validate which approaches work.
@@ -100,10 +117,11 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
 - Consider: can we generate 1-2 new root nodes with simpler variants?
 - If no viable path: mark hypothesis as failed, continue with remaining hypothesis.
 
-### Stage 4.2: Hyperparameter Tuning
+### Stage 4.2: Extended Evaluation
 
-**Goal**: Fine-tune the best variant from Stage 4.1.
+**Default goal**: Fine-tune the best variants from Stage 4.1. **But check EXPERIMENT_PLAN.md first** — the phase plan may specify something different (e.g., cross-architecture validation, longer training, additional baselines).
 
+**Default template** (use only if phase plan does not specify otherwise):
 For each Stage 4.1 winner:
 1. Create **3 child nodes** varying one hyperparameter each:
    - Child 1: vary learning rate (e.g., 0.5x and 2x)
@@ -114,10 +132,17 @@ For each Stage 4.1 winner:
 4. Select best child per hypothesis.
 5. Update experiment_tree.json and registry.yaml: `tree_stages_complete: 2`.
 
-### Stage 4.3: Method Refinement
+### Stage 4.3: Full-Scale Validation
 
-**Goal**: Improve the method itself, not just hyperparameters.
+**Default goal**: Improve the method itself. **But check EXPERIMENT_PLAN.md first** — the phase plan often specifies full-scale training, cross-architecture validation, or other designs that override this default.
 
+**If the phase plan says "decide based on 4.2 results"**: Analyze 4.2 results BEFORE designing 4.3 nodes. Specifically:
+- Compare method rankings across conditions tested in 4.2 (architectures, scales, etc.)
+- If rankings are consistent → proceed with the primary architecture/scale
+- If rankings diverge → investigate the divergence (run the surprising condition at full scale)
+- Record your analysis and decision in `.ai/evolution/decisions.md` as an ADR
+
+**Default template** (use only if phase plan does not specify otherwise):
 For each Stage 4.2 winner:
 1. Analyze results — what is the error pattern? Where does the method struggle?
 2. Create **3 child nodes** with method-level improvements:
