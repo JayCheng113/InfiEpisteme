@@ -78,7 +78,7 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
 
    - If poll returns success: read `results/{node_id}/metrics.json`
    - If poll returns failure: mark node as `buggy`, log to negative-results.md
-3. **For each completed node**:
+4. **For each completed node**:
    - Generate figures: run the figure generation code
    - Submit figures for VLM review (invoke VLM review logic)
    - If VLM score < 4: regenerate with feedback (max 3 attempts)

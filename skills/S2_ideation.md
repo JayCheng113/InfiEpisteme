@@ -124,7 +124,7 @@ For each selected hypothesis, create **N=3 root nodes** (6 total). Each root nod
 - RIGHT: `H1_R1: "PreNorm baseline"`, `H1_R2: "Block AttnRes"`, `H1_R3: "DCA"` (1 run each)
 
 **Budget estimation per node**: Before finalizing the tree, estimate GPU hours per node:
-- Read `hardware_profile.json` for throughput (tokens/sec)
+- Estimate throughput based on hardware and model size (approximate: A100-40GB ~50K tok/s for 0.5B bf16, ~25K for 1.5B; A100-80GB ~2x; V100 ~0.3x)
 - Calculate: `gpu_hours = total_tokens / tokens_per_sec / 3600`
 - Sum all nodes. If total exceeds `config.yaml compute.gpu_hours`, reduce scope:
   - Cut token count (S4.1 preliminary: 100-200M tokens is sufficient)
