@@ -143,26 +143,41 @@ A dedicated Memory Synthesizer runs after every stage to consolidate knowledge. 
 
 ### Getting Started
 
+**Step 1: Setup** — Tell your local CC about the server.
 ```
 You: My server is user@gpu-box with an A100. Clone InfiEpisteme and set it up.
 CC:  [SSHs to server, clones, detects hardware] Done. What's your research direction?
+```
 
-You: [describe your research idea in plain language]
-CC:  [searches literature, checks novelty, writes proposal]
+**Step 2: Direction (P0)** — Discuss your research idea with local CC. This is an interactive conversation — CC asks clarifying questions, you refine together. Local CC writes `config.yaml` with the agreed direction, then dispatches it to the server.
+```
+You: I want to study Kimi's Attention Residuals paper that just came out.
+     Validate it on small LLMs and propose improvements. Target NeurIPS 2026.
+
+CC:  Interesting. A few questions:
+     - Do you want to compare against other depth-aggregation methods too?
+     - What scale — 0.5B? 1B?
+     - Single architecture or cross-architecture?
+
+You: Compare against DCA, MUDDFormer, DenseFormer. 0.5B, LLaMA + Pythia.
+CC:  [writes config.yaml, dispatches P0 to server to formalize proposal]
 
      ── CHECKPOINT: P0 ──
-     Here's what I'm proposing. A few things to verify:
+     Here's the formalized proposal. A few things to verify:
      1. The hypothesis claims X — does that match the paper?
-     2. Scope: testing on LLaMA + Pythia at 0.5B. Enough for NeurIPS?
-     3. Budget: ~75 GPU-hours for 14 experiments. Feasible?
+     2. Scope: LLaMA + Pythia at 0.5B. Enough for NeurIPS?
+     3. Budget: ~80 GPU-hours for 3-phase plan. Feasible?
 
-You: Looks good, but add DenseFormer as a baseline.
+You: Looks good, but add DHC as a baseline too.
 CC:  [updates proposal, continues to S1-S2]
+```
 
+**Step 3: Review design (S2)** — Pipeline runs S0-S2 automatically. Pauses for you to review experiment design.
+```
      ── CHECKPOINT: S2 ──
-     Experiment design ready. 8 nodes, 2 architectures. Check:
+     Experiment design ready. 14 nodes, 2 architectures, 3 phases. Check:
      1. Each node tests one variable? ✓
-     2. Budget: 8 × 2.7h = ~22h for screening. Leaves 58h for tuning. ✓
+     2. Budget: 14 × 2.5h = ~35h screening. Leaves 45h for full training. ✓
      3. Any missing baselines?
 
 You: Go.

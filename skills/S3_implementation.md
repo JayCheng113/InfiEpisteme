@@ -31,6 +31,18 @@ Based on your research task, load the relevant reference guide:
 - **Distributed training (FSDP)**: Read `skills/references/impl-fsdp2.md`
 - **Fast LoRA training**: Read `skills/references/impl-unsloth.md`
 
+### Open-Source Implementation Search (REQUIRED)
+
+Before writing any method from scratch, you MUST search for existing open-source implementations:
+
+1. **For each method in experiment_tree.json**, search GitHub/web for the official repo or community reimplementations. Use `WebSearch` with queries like `"{method_name} github"`, `"{paper_title} official code"`.
+2. **If an official implementation exists**: read the core module, adapt it to your project structure, and cite the source repo in code comments.
+3. **If community reimplementations exist**: cross-reference with the paper equations to verify correctness before adopting.
+4. **If no implementation exists**: implement from the paper's equations and formulas. Note `# Implemented from paper, no public code available` in the code.
+5. **For novel/proposed methods** (e.g., hybrids or new ideas not from any paper): implement from the design in `EXPERIMENT_PLAN.md`. Reuse existing components where possible (e.g., reuse RoPE code for depth-phase encoding).
+
+This step prevents bugs from misunderstanding paper descriptions and saves time by building on verified code.
+
 ### Idempotency Check
 - Read `experiment_tree.json` and check node statuses.
 - If all root nodes have `status: "runnable"`: verify each actually runs, then skip.
