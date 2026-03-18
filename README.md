@@ -139,77 +139,119 @@ Layer 3: Context       .ai/context_chain.md — the "why" thread across stages
 
 A dedicated Memory Synthesizer runs after every stage to consolidate knowledge. Skills never write to `.ai/` directly.
 
-## How to Use
+## Setup
 
-### Getting Started
+### Prerequisites
 
-**Step 1: Setup** — Tell your local CC about the server.
+- **Local machine**: [Claude Code](https://claude.com/claude-code) installed
+- **GPU server**: SSH access to a machine with GPU (e.g., `ubuntu@gpu-box`)
+  - Claude Code installed on the server
+  - Python 3.10+ with `pyyaml`, `requests`
+  - OpenAI API key on the server (for cross-model review in S7):
+    ```bash
+    echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc && source ~/.bashrc
+    ```
+
+### Server Setup
+
+Clone and configure on the server:
+```bash
+ssh user@gpu-box
+git clone https://github.com/JayCheng113/InfiEpisteme.git
+cd InfiEpisteme
+pip install pyyaml requests
 ```
-You: My server is user@gpu-box with an A100. Clone InfiEpisteme and set it up.
-CC:  [SSHs to server, clones, detects hardware] Done. What's your research direction?
+
+Then edit `config.yaml` on the server:
+```yaml
+research_direction: |
+  Your research idea here. Be specific: what problem, what method,
+  what comparison, what scale. The more detail, the better the pipeline
+  performs. Example:
+  "Validate Kimi's Attention Residuals on dense sub-2B LLMs.
+   Compare against DCA, MUDDFormer, DenseFormer on LLaMA and Pythia
+   at 0.5B scale. Target NeurIPS 2026."
+
+target_venue: "NeurIPS 2026"    # or "ICML 2026", "arxiv", etc.
+
+compute:
+  gpu_hours: 80                  # your available GPU budget
+  gpu_type: "A100"               # your GPU type
+  parallel_jobs: 1               # how many experiments to run at once
 ```
 
-**Step 2: Direction (P0)** — Discuss your research idea with local CC. This is an interactive conversation — CC asks clarifying questions, you refine together. Local CC writes `config.yaml` with the agreed direction, then dispatches it to the server.
+### Two Ways to Run
+
+**Option A: Interactive (recommended)** — You talk to your local Claude Code, it SSHs to the server and runs stages one by one. You can monitor, intervene, and guide at any point.
+
 ```
-You: I want to study Kimi's Attention Residuals paper that just came out.
-     Validate it on small LLMs and propose improvements. Target NeurIPS 2026.
+You: SSH to ubuntu@gpu-box, go to ~/InfiEpisteme, and start the research pipeline.
+```
 
-CC:  Interesting. A few questions:
-     - Do you want to compare against other depth-aggregation methods too?
-     - What scale — 0.5B? 1B?
-     - Single architecture or cross-architecture?
+Your local CC will read config.yaml, run each stage via `claude -p`, check results, and report back. At checkpoints (P0, S2), it pauses for your review.
 
-You: Compare against DCA, MUDDFormer, DenseFormer. 0.5B, LLaMA + Pythia.
-CC:  [writes config.yaml, dispatches P0 to server to formalize proposal]
+**Option B: Unattended** — Run directly on the server:
+```bash
+./run.sh start                        # runs pipeline, pauses at checkpoints
+./run.sh approve                      # approve checkpoint and continue
+./run.sh approve --with 'add Pythia'  # approve with modifications
+./run.sh status                       # check progress
+```
 
-     ── CHECKPOINT: P0 ──
-     Here's the formalized proposal. A few things to verify:
-     1. The hypothesis claims X — does that match the paper?
-     2. Scope: LLaMA + Pythia at 0.5B. Enough for NeurIPS?
-     3. Budget: ~80 GPU-hours for 3-phase plan. Feasible?
+## How It Works in Practice
+
+### 1. You describe your research idea
+
+The most important input is `config.yaml`'s `research_direction`. Write it yourself, or tell your local CC what you want and ask it to write config.yaml for you:
+
+```
+You: I want to study Kimi's Attention Residuals paper (arxiv:2603.15031).
+     Validate it on small dense LLMs, compare against other depth-aggregation
+     methods, and propose improvements. Target NeurIPS 2026. I have an A100-40GB
+     with 80 GPU-hours budget.
+
+CC:  Got it. I'll write config.yaml with this direction and set up the pipeline.
+     [SSHs to server, writes config.yaml, starts P0]
+```
+
+### 2. Pipeline runs, pauses at two checkpoints
+
+```
+     ── CHECKPOINT: P0 (research direction) ──
+     CC:  Here's the formalized proposal. Please verify:
+          1. Is the hypothesis correctly framed?
+          2. Is the scope appropriate for NeurIPS?
+          3. Is the compute budget feasible?
 
 You: Looks good, but add DHC as a baseline too.
 CC:  [updates proposal, continues to S1-S2]
-```
 
-**Step 3: Review design (S2)** — Pipeline runs S0-S2 automatically. Pauses for you to review experiment design.
-```
-     ── CHECKPOINT: S2 ──
-     Experiment design ready. 14 nodes, 2 architectures, 3 phases. Check:
-     1. Each node tests one variable? ✓
-     2. Budget: 14 × 2.5h = ~35h screening. Leaves 45h for full training. ✓
-     3. Any missing baselines?
+     ── CHECKPOINT: S2 (experiment design) ──
+     CC:  Experiment design ready. 14 nodes, 2 architectures. Check:
+          1. Each node tests exactly one variable? ✓
+          2. Budget: 14 × 2.5h = ~35h screening. Leaves 45h for tuning. ✓
+          3. Any missing baselines?
 
 You: Go.
 CC:  [runs S3-S8 fully automated, reports when done]
 ```
 
-### Monitoring
+### 3. Monitor anytime
 
 ```
 You: What's the status?
 CC:  S4.2 running. 4/6 experiments complete. Best perplexity: 48.4.
 
-You: What are the risks for this stage?
-CC:  Paper is only 2 days old — Semantic Scholar won't have it. I'm using web search.
-```
-
-### Intervening
-
-```
 You: Change H2's direction to [new idea].
 CC:  [updates experiment tree, re-runs affected sub-stage]
-
-You: Stop. I want a completely different topic.
-CC:  [kills processes, resets to P0, waits for your new direction]
 ```
 
-### Debugging (CC does this automatically)
+### 4. CC handles problems automatically
 
 ```
 CC:  S1 failed: only 21 citations detected (need 30).
      Root cause: regex doesn't match "et al." format.
-     [fixes locally, pushes to GitHub, syncs to server, re-verifies]
+     [fixes regex, re-verifies]
      Fixed. 36 citations now. Advancing.
 ```
 
@@ -298,31 +340,6 @@ When working on cutting-edge topics, CC proactively watches for:
 | Experiments exceed GPU budget | Adjusts batch size, reduces model scale, or stops early |
 | Citation format mismatch | Fixes validation regex, re-verifies |
 | API errors mid-pipeline | Retries with exponential backoff, or resumes from checkpoint |
-
-## Setup
-
-**GPU Server** (one-time):
-```bash
-git clone https://github.com/your-org/InfiEpisteme.git && cd InfiEpisteme
-pip install pyyaml requests
-claude --version   # Claude Code must be installed
-```
-
-**Cross-model review** (required for S7):
-```bash
-# Add OpenAI API key to server environment for GPT-based adversarial review
-echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc && source ~/.bashrc
-```
-
-**Local Machine**: Just have Claude Code installed. Then start a conversation.
-
-**Optional — unattended mode**:
-```bash
-./run.sh start                        # runs pipeline, pauses at checkpoints
-./run.sh approve                      # approve checkpoint and continue
-./run.sh approve --with 'add Pythia'  # approve with modifications
-./run.sh status                       # check progress
-```
 
 **Optional MCP servers** for enhanced paper search:
 ```bash
