@@ -205,7 +205,7 @@ Write `state/JUDGE_RESULT.json`:
   "criteria": [
     {
       "criterion": "description",
-      "layer": 1 | 2,
+      "layer": 1 | 2 | 3,
       "met": true | false,
       "evidence": "specific evidence for this assessment"
     }

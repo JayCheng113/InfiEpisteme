@@ -14,7 +14,7 @@
 
 ## Layer B: LLM Adversarial Brief
 
-> Auto-generated below by the judge. These are the weakest points identified by the LLM.
+> Auto-generated below by the checkpoint skill. These are the weakest points identified by the LLM.
 
 {LLM_BRIEF}
 

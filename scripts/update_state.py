@@ -30,7 +30,8 @@ def main():
     cmd = sys.argv[1]
 
     # Validate stage argument for commands that require one
-    if cmd in ("set_running", "advance", "fail", "reset", "set"):
+    if cmd in ("set_running", "advance", "fail", "reset", "set",
+                "set_awaiting_human", "clear_checkpoint"):
         stage = sys.argv[2]
         if stage not in STAGE_ORDER:
             print(f"ERROR: invalid stage {stage}", file=sys.stderr)
@@ -69,6 +70,9 @@ def main():
             reg["stages"][s].pop("last_failure_reason", None)
         reg["current_stage"] = stage
         reg["phase"] = "alignment" if stage == "P0" else "research"
+        # Clear any pending checkpoint
+        reg.pop("status", None)
+        reg.pop("checkpoint_stage", None)
 
     elif cmd == "reset_all":
         for s in STAGE_ORDER:

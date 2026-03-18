@@ -13,7 +13,7 @@
 
 ## Layer B: LLM Adversarial Brief
 
-> Auto-generated below by the judge. These are the things the LLM is least confident about.
+> Auto-generated below by the checkpoint skill. These are the things the LLM is least confident about.
 
 {LLM_BRIEF}
 

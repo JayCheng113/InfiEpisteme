@@ -20,6 +20,7 @@ You are a Claude Code skill — a self-contained instruction set that reads inpu
    - Read the `criteria` array to see which checks failed.
    - Address those specific failures in this run. Do not start from scratch unless retry_guidance says to.
 5. **Check existing outputs** — if the expected output files already exist and are complete, skip that work. Only redo work that failed or is missing.
+6. **Check `state/HUMAN_RESPONSE_{stage}.md`** — if it exists, the human reviewed your previous output and requested modifications. Read and incorporate their feedback. This takes priority over existing outputs.
 
 ## .ai/ Knowledge Base Protocol
 

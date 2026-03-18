@@ -39,9 +39,7 @@ Rules for the brief:
 2. Replace `{LLM_BRIEF}` with the adversarial brief from Step 2.
 3. Write to `state/CHECKPOINT_{stage}.md`.
 
-### Step 4: Update Registry
-
-Set `status: awaiting_human` and `checkpoint_stage: {stage}` in registry.yaml.
+Note: Do NOT modify registry.yaml. The orchestrator (run.sh) handles state transitions.
 
 ## Output
 

@@ -236,9 +236,10 @@ run_human_checkpoint() {
     echo "  ./run.sh approve --with 'your changes'    — approve with modifications"
     echo ""
 
-    # Set registry to awaiting_human
+    # Set registry to awaiting_human and exit pipeline.
+    # User resumes via ./run.sh approve after reviewing the checkpoint.
     python3 scripts/update_state.py set_awaiting_human "$stage"
-    exit 0
+    exit 0  # Intentional: pauses pipeline until human approves
 }
 
 check_awaiting_human() {
@@ -268,11 +269,9 @@ print(r.get('checkpoint_stage', ''))
 
     if [ -n "$modifications" ]; then
         echo "[$(timestamp)] Approved with modifications: $modifications"
-        echo "Human modifications: $modifications" >> "state/HUMAN_RESPONSE_${stage}.md"
-        # Re-run the stage with human modifications applied
-        python3 scripts/update_state.py clear_checkpoint "$stage"
+        echo "Human modifications: $modifications" > "state/HUMAN_RESPONSE_${stage}.md"
         echo "[$(timestamp)] Re-running $stage with modifications..."
-        # Reset stage to re-run with human input incorporated
+        # Reset clears checkpoint fields and resets stage to pending
         python3 scripts/update_state.py reset "$stage"
         pipeline_loop
     else
