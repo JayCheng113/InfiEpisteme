@@ -199,6 +199,7 @@ Update the node in experiment_tree.json:
 - If a node takes > 2x estimated time, investigate before waiting longer.
 - Always validate results before marking as complete (no NaN, reasonable range).
 - Log GPU hours consumed for budget tracking.
+- **Never delete or overwrite existing training logs or results.** If `results/{node_id}/metrics.json` already exists with valid data, skip training. If log files exist, back them up with a timestamp before starting a new run. Losing hours of training data to a careless restart is unrecoverable.
 
 ## When Done
 

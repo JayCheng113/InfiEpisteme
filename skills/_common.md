@@ -90,6 +90,7 @@ Outer-loop reflection commits: `research(reflect): {direction} — {reason}`
 - Before writing an output file, check if it already exists with valid content.
 - If it does, skip or update incrementally rather than overwriting from scratch.
 - Use timestamps or checksums when possible to detect staleness.
+- **Never delete training logs, experiment results, or checkpoint files.** If you need to re-run, back up existing files with a timestamp first. Hours of GPU compute are not recoverable.
 
 ## Error Handling
 
