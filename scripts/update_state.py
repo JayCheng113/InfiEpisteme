@@ -78,6 +78,23 @@ def main():
         reg["current_stage"] = "P0"
         reg["phase"] = "alignment"
 
+    elif cmd == "set_awaiting_human":
+        stage = sys.argv[2]
+        reg["status"] = "awaiting_human"
+        reg["checkpoint_stage"] = stage
+
+    elif cmd == "clear_checkpoint":
+        stage = sys.argv[2]
+        reg.pop("status", None)
+        reg.pop("checkpoint_stage", None)
+        # Stage already passed judge — advance to next
+        idx = STAGE_ORDER.index(stage)
+        if idx + 1 < len(STAGE_ORDER):
+            reg["current_stage"] = STAGE_ORDER[idx + 1]
+        else:
+            reg["current_stage"] = "COMPLETE"
+        reg["stages"][stage]["status"] = "complete"
+
     elif cmd == "set":
         stage, key, value = sys.argv[2], sys.argv[3], sys.argv[4]
         # Try to parse as int/float

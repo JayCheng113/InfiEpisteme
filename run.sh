@@ -204,6 +204,84 @@ print('done' if float(done) >= float(target) + 0.1 else 'pending')
     return 0
 }
 
+needs_human_checkpoint() {
+    # P0 and S2 require human review after judge passes
+    case "$1" in
+        P0|S2) return 0 ;;
+        *)     return 1 ;;
+    esac
+}
+
+run_human_checkpoint() {
+    local stage="$1"
+    echo ""
+    echo "[$(timestamp)] ═══════════════════════════════════════"
+    echo "[$(timestamp)] HUMAN CHECKPOINT: $stage"
+    echo "[$(timestamp)] ═══════════════════════════════════════"
+
+    # Generate checkpoint document using checkpoint.md skill
+    local ckpt_file
+    ckpt_file="$(build_prompt_file skills/checkpoint.md)"
+    printf '\n\nGenerate checkpoint for stage: %s' "$stage" >> "$ckpt_file"
+    if ! run_claude_with_retry "state/${stage}_checkpoint.log" -p "$(cat "$ckpt_file")" --allowedTools "Bash,Read,Write,Glob,Grep"; then
+        echo "[$(timestamp)] Checkpoint generation failed (non-fatal, pausing anyway)"
+    fi
+    rm -f "$ckpt_file"
+
+    echo ""
+    echo "[$(timestamp)] Human review required before proceeding."
+    echo "[$(timestamp)] Review: state/CHECKPOINT_${stage}.md"
+    echo ""
+    echo "  ./run.sh approve                          — approve and continue"
+    echo "  ./run.sh approve --with 'your changes'    — approve with modifications"
+    echo ""
+
+    # Set registry to awaiting_human
+    python3 scripts/update_state.py set_awaiting_human "$stage"
+    exit 0
+}
+
+check_awaiting_human() {
+    # Check if we're waiting for human approval
+    local status
+    status=$(python3 -c "
+import yaml, pathlib
+r = yaml.safe_load(pathlib.Path('registry.yaml').read_text())
+print(r.get('status', ''))
+" 2>/dev/null || echo "")
+    [ "$status" = "awaiting_human" ]
+}
+
+handle_approve() {
+    local modifications="${1:-}"
+    if ! check_awaiting_human; then
+        echo "No pending checkpoint to approve."
+        exit 1
+    fi
+
+    local stage
+    stage=$(python3 -c "
+import yaml, pathlib
+r = yaml.safe_load(pathlib.Path('registry.yaml').read_text())
+print(r.get('checkpoint_stage', ''))
+" 2>/dev/null)
+
+    if [ -n "$modifications" ]; then
+        echo "[$(timestamp)] Approved with modifications: $modifications"
+        echo "Human modifications: $modifications" >> "state/HUMAN_RESPONSE_${stage}.md"
+        # Re-run the stage with human modifications applied
+        python3 scripts/update_state.py clear_checkpoint "$stage"
+        echo "[$(timestamp)] Re-running $stage with modifications..."
+        # Reset stage to re-run with human input incorporated
+        python3 scripts/update_state.py reset "$stage"
+        pipeline_loop
+    else
+        echo "[$(timestamp)] Approved. Continuing pipeline."
+        python3 scripts/update_state.py clear_checkpoint "$stage"
+        pipeline_loop
+    fi
+}
+
 run_stage() {
     local stage="$1"
 
@@ -266,6 +344,11 @@ pipeline_loop() {
 
             if run_stage "$stage"; then
                 passed=true
+                # Human checkpoint for critical decision stages
+                if needs_human_checkpoint "$stage"; then
+                    run_human_checkpoint "$stage"
+                    # run_human_checkpoint exits the script; pipeline resumes via ./run.sh approve
+                fi
             else
                 echo "[$(timestamp)] Stage $stage FAILED (attempt $attempt)"
             fi
@@ -292,7 +375,22 @@ case "${1:-help}" in
         pipeline_loop fresh
         ;;
     resume)
+        if check_awaiting_human; then
+            echo "Pipeline is waiting for human approval."
+            echo "Review: state/CHECKPOINT_$(python3 -c "import yaml,pathlib;print(yaml.safe_load(pathlib.Path('registry.yaml').read_text()).get('checkpoint_stage',''))" 2>/dev/null).md"
+            echo "Run: ./run.sh approve"
+            exit 0
+        fi
         pipeline_loop
+        ;;
+    approve)
+        shift
+        if [ "${1:-}" = "--with" ]; then
+            shift
+            handle_approve "$*"
+        else
+            handle_approve
+        fi
         ;;
     status)
         python3 scripts/parse_state.py status
@@ -304,11 +402,13 @@ case "${1:-help}" in
     *)
         echo "InfiEpisteme v2.1 — Automated Research Pipeline"
         echo ""
-        echo "Usage: ./run.sh {start|resume|status|reset <stage>}"
+        echo "Usage: ./run.sh {start|resume|approve|status|reset <stage>}"
         echo ""
-        echo "  start          Start from Phase 0 (direction alignment)"
-        echo "  resume         Resume from current stage"
-        echo "  status         Show pipeline status"
-        echo "  reset <stage>  Reset a stage (P0|S0|S1|...|S8)"
+        echo "  start                        Start from Phase 0"
+        echo "  resume                       Resume from current stage"
+        echo "  approve                      Approve human checkpoint and continue"
+        echo "  approve --with 'changes'     Approve with modifications"
+        echo "  status                       Show pipeline status"
+        echo "  reset <stage>                Reset a stage (P0|S0|S1|...|S8)"
         ;;
 esac

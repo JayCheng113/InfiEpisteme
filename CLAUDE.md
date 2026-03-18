@@ -51,10 +51,12 @@ After completing significant work, follow `.ai/_maintenance-rules.md`:
 ## Pipeline Stages
 
 ```
-[Hardware Detection] → P0: Direction Alignment (user present, ~30min)
-S0: Init → S1: Literature → S2: Ideation → S3: Code →
+[Hardware Detection] → P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 →
 S4: Experiments (tree search) → S5: Analysis →
 S6: Writing → S7: Review-Revise → S8: Delivery
+
+[CHECKPOINT] = human review gate at P0 (direction) and S2 (design)
+              fixed checklist + LLM adversarial brief → ./run.sh approve
 ```
 
 ## Architecture (v2.1 — .md-native + MCP)
@@ -101,5 +103,7 @@ Use first-principles thinking. Do not assume I always know exactly what I want o
 
 - Start: `./run.sh start`
 - Resume: `./run.sh resume`
+- Approve checkpoint: `./run.sh approve`
+- Approve with changes: `./run.sh approve --with "your modifications"`
 - Status: `./run.sh status`
 - Reset: `./run.sh reset <stage>`

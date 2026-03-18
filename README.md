@@ -204,6 +204,7 @@ CC:  S1 failed: only 21 citations detected (need 30).
 
 | Mechanism | What It Does |
 |-----------|-------------|
+| **Human checkpoints** | Pipeline pauses after P0 and S2 for human review — fixed checklist + LLM adversarial brief targets known failure modes |
 | **Circuit breaker** | Same failure 3x → pauses for human input |
 | **State Guard** | Deterministic Python checks after every stage |
 | **3-Layer Judge** | Layer 1: deterministic checks. Layer 2: content quality. Layer 3: first-principles reasoning — challenges assumptions, catches factual errors, flags insufficient experimental design |
