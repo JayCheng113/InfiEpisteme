@@ -148,9 +148,30 @@ After verification:
 - Check for uncited bibliography entries (warn but do not remove — they may be used in appendix).
 - Log the verification: "{N} citations verified, {M} removed as unverifiable."
 
-### Phase 5: Compile
+### Phase 4.5: Incremental Compilation (after each section)
 
-1. Set up paper structure:
+**Do not wait until all sections are written to compile.** After writing each section file, compile immediately:
+
+```bash
+cd paper && pdflatex -interaction=nonstopmode main.tex 2>&1 | tail -20
+```
+
+If compilation fails:
+1. Read the **last 20 lines** of output — the actual error is usually near the end.
+2. Common LaTeX errors and fixes:
+   - `Undefined control sequence` → missing `\usepackage` or typo in command name
+   - `Missing $ inserted` → math outside math mode, or unescaped `_` / `%` / `&`
+   - `Extra alignment tab` → wrong number of `&` in tabular
+   - `Environment ... undefined` → missing package (e.g., `algorithm2e`, `subcaption`)
+   - `Missing \begin{document}` → encoding issue or stray character before preamble
+3. Fix the error in the section file, recompile.
+4. Only proceed to the next section after this one compiles cleanly.
+
+This catches errors immediately when context is fresh, rather than debugging a pile of errors at the end.
+
+### Phase 5: Final Compile and Verify
+
+1. Set up paper structure (should already exist from incremental compilation):
 ```
 paper/
   main.tex          # master file with \input{} for each section
@@ -184,8 +205,9 @@ cd paper && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex ma
 ```
 
 4. Check for errors:
-   - If compilation fails: read the log, fix the error, retry (max 3 attempts).
-   - Common fixes: undefined references (run bibtex again), missing packages (add \usepackage), figure not found (check path).
+   - If compilation fails: read `paper/main.log`, search for lines starting with `!` (these are the actual errors). Fix and retry.
+   - If bibtex fails: check `paper/main.blg` for missing entries or format errors.
+   - Max 5 fix-compile cycles. If still failing after 5, report the specific error — do not silently produce a broken PDF.
 
 5. Copy final PDF:
 ```bash
