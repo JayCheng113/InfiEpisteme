@@ -44,6 +44,7 @@ These are binary pass/fail checks. Run ALL of them before proceeding to Layer 2.
 - [ ] Contains non-empty `baselines` field (at least 1 baseline)
 - [ ] Contains non-empty `success_metric` field
 - [ ] Contains `novelty_assessment` section with content
+- [ ] No `[NEEDS CLARIFICATION]` markers remain (if found: FAIL — config.yaml needs more detail)
 
 #### S0 — Init
 - [ ] `.ai/core/research-context.md` exists and has content derived from RESEARCH_PROPOSAL.md

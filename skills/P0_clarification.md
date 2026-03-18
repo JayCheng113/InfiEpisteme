@@ -9,7 +9,7 @@
 
 1. Read `registry.yaml` — confirm `current_stage: P0`.
 2. Read `config.yaml` — the `research_direction` field contains the user's research intent (written by local CC after user discussion).
-3. Read `hardware_profile.json` — hardware capabilities affect scope decisions.
+3. Read `hardware_profile.json` if it exists — hardware capabilities affect scope decisions. If missing, proceed without hardware-aware scope validation (note that scope estimates may be less precise).
 4. Check if `RESEARCH_PROPOSAL.md` already exists:
    - If it exists and has all required fields filled: verify completeness and skip.
    - If it exists but is incomplete: resume from the first missing field.

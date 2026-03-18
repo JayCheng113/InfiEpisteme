@@ -21,7 +21,7 @@
 
 ### P0 — Direction Alignment
 **Skills**: `P0_clarification.md`, `P0_novelty.md`
-**Mode**: Interactive (user present)
+**Mode**: Non-interactive (formalizes config.yaml; user interaction happens at local CC before dispatch)
 **Timeout**: 30m
 **Max Retries**: 1
 

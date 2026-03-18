@@ -4,7 +4,7 @@
 
 InfiEpisteme is an automated research pipeline that turns a research idea into a peer-review-quality paper, clean code, and organized results — all through natural language conversation with Claude Code.
 
-No frameworks to learn. No config files to edit. No scripts to memorize. Just describe what you want to study.
+No frameworks to learn. No scripts to memorize. Just describe what you want to study.
 
 ```
 You: I want to study Kimi's Attention Residuals paper that just came out.

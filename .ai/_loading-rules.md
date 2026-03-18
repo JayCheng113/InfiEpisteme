@@ -65,9 +65,10 @@ Every agent starts with:
 
 These reference files contain framework-specific code patterns from [Orchestra Research](https://github.com/Orchestra-Research/AI-Research-SKILLs). Load them **on demand via the Read tool** — do NOT skip this step.
 
-### S3 (Implementation) — MUST load at least one:
+### S3 (Implementation) — MUST load:
 | Condition | Reference to Read |
 |-----------|-------------------|
+| Always (S3) | `skills/references/coding-practices.md` |
 | Building custom model < 1B params | `skills/references/impl-nanogpt.md` |
 | Using existing architecture (LLaMA, Mistral, Qwen) | `skills/references/impl-litgpt.md` |
 | `hardware_profile.json` shows GPU count > 1 | `skills/references/impl-fsdp2.md` |
