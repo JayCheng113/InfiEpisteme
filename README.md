@@ -12,6 +12,7 @@ You: I want to study Kimi's Attention Residuals paper that just came out.
 
 CC:  [searches web, finds paper, identifies 5 competing methods]
      [sets up server, writes proposal, starts 9-stage pipeline]
+     [pauses for your review at key decisions]
      [monitors, catches bugs, fixes them, keeps going]
 
      ...6 hours later...
@@ -34,7 +35,7 @@ CC:  [searches web, finds paper, identifies 5 competing methods]
 
 ## Self-Evolving Pipeline
 
-InfiEpisteme improves itself through natural language — no RL, no code rewrites, no retraining.
+InfiEpisteme improves itself through natural language — no RL, no retraining, just updated instructions.
 
 ```
      Run pipeline
@@ -62,59 +63,51 @@ Every skill file is a natural language instruction. When something goes wrong, y
 | "This hypothesis has no evidence" | S2: Added `evidence_basis: speculative` label requirement |
 | "The node packed 6 training runs" | S2: Added "one node = one training run" rule |
 | "500M tokens is too much for preliminary" | S4: Added "S4.1 uses 100-200M tokens" limit |
-| "experiment_tree.json never updates" | S4: Added "set status to running BEFORE training" step |
+| "Only one architecture isn't convincing" | Added Pythia arch support; redesigned S4.1 as cross-architecture screening |
 
 **The pipeline's instructions are its weights. Natural language is the gradient. Conversation is the training loop.**
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                                                                        │
-│   You: "Study Attention Residuals, target NeurIPS 2026"                │
-│    │                                                                   │
-│    ▼                                                                   │
-│   Local Claude Code ◄──────────────────────────────────────────┐      │
-│    │  (mission control — the only CC you talk to)              │      │
-│    │                                                            │      │
-│    ├─ Web search: finds paper, competing methods               │      │
-│    ├─ Risk analysis: "paper is 2 days old, S1 will struggle"   │      │
-│    ├─ SSH: configures server, writes config.yaml               │      │
-│    │                                                            │      │
-│    │   ┌─ Executes stage ──────────────────────────────┐       │      │
-│    │   │                                                │       │      │
-│    ├───┼─ ssh: claude -p "skills/S1.md" ───────────────┼──►[1] │      │
-│    │   │  (spawns CC instance on server for skill)      │       │      │
-│    │   │                                                │       │      │
-│    ├───┼─ ssh: state_guard.py verify ──────────────────┼──►[2] │      │
-│    │   │  (deterministic check — no CC needed)          │       │      │
-│    │   │                                                │       │      │
-│    │   │  ◄── FAIL: "only 21 citations, need 30"       │       │      │
-│    │   │                                                │       │      │
-│    ├─ Diagnoses: "regex doesn't match 'et al.' format" │       │      │
-│    ├─ Fixes state_guard.py locally                      │       │      │
-│    ├─ git push + rsync to server                        │       │      │
-│    ├─ Runs supplement search for more papers            │       │      │
-│    │   │                                                │       │      │
-│    ├───┼─ ssh: state_guard.py verify ──────────────────┼──►[3] │      │
-│    │   │  ◄── PASS: 36 citations                        │       │      │
-│    │   │                                                │       │      │
-│    ├───┼─ ssh: claude -p "skills/judge.md" ────────────┼──►[4] │      │
-│    │   │  (spawns CC instance for quality evaluation)   │       │      │
-│    │   │                                                │       │      │
-│    ├───┼─ ssh: state_guard.py advance ─────────────────┼──►[5] │      │
-│    │   │  ◄── "PASSED — advanced to S2"                 │       │      │
-│    │   └────────────────────────────────────────────────┘       │      │
-│    │                                                            │      │
-│    ├─ Reports to you: "S1 done, 36 papers. Starting S2."  ─────┘      │
-│    │                                                                   │
-│    └─ Repeats for S2, S3, S4... ─── intervene anytime ◄── You        │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  You: "Study Attention Residuals, target NeurIPS 2026"                     │
+│   │                                                                        │
+│   ▼                                                                        │
+│  Local Claude Code (mission control — the only CC you talk to)             │
+│   │                                                                        │
+│   ├─ Web search: finds paper, competing methods                            │
+│   ├─ SSH: configures server, writes config.yaml                            │
+│   │                                                                        │
+│   │  ┌─ Per-stage execution loop ─────────────────────────────────────┐    │
+│   │  │                                                                 │    │
+│   │  │  ssh: claude -p "skills/S{N}.md"     ──► skill execution       │    │
+│   │  │  ssh: state_guard.py verify          ──► deterministic check   │    │
+│   │  │  ssh: claude -p "skills/memory_sync" ──► knowledge consolidate │    │
+│   │  │  ssh: claude -p "skills/judge.md"    ──► 3-layer quality gate  │    │
+│   │  │       Layer 1: deterministic checks                            │    │
+│   │  │       Layer 2: content quality                                 │    │
+│   │  │       Layer 3: first-principles reasoning                     │    │
+│   │  │  ssh: state_guard.py advance         ──► next stage or retry  │    │
+│   │  │                                                                 │    │
+│   │  │  [CHECKPOINT at P0, S2] ──► pause for human review            │    │
+│   │  │       Fixed checklist (targets known failure modes)            │    │
+│   │  │       + LLM adversarial brief (supplements)                   │    │
+│   │  │       + Raw file access (fallback)                            │    │
+│   │  │       ──► ./run.sh approve to continue                        │    │
+│   │  │                                                                 │    │
+│   │  └────────────────────────────────────────────────────────────────┘    │
+│   │                                                                        │
+│   ├─ Diagnoses failures, hotfixes, retries automatically                   │
+│   ├─ Reports to you in plain language                                      │
+│   └─ Repeats for all stages ─── intervene anytime ◄── You                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 
 GPU Server receives SSH commands. Each "claude -p" spawns an independent
 CC instance that reads skill instructions, does the work, writes files.
-Local CC checks results, decides next action. No run.sh required.
+Local CC checks results, decides next action.
 ```
 
 **`run.sh` is optional.** It automates the loop for unattended runs, but the real orchestrator is your local Claude Code. In practice, local CC provides better results because it can:
@@ -125,7 +118,7 @@ Local CC checks results, decides next action. No run.sh required.
 - **Search the web** for context that server-side CC can't access
 - **Report to you** in plain language and ask for judgment calls
 
-**The chain of command**: You give one instruction in natural language → your local CC breaks it into actions → each action spawns a dedicated CC instance on the server (one for the skill, one for memory sync, one for judging) → they coordinate through shared files → local CC monitors results and intervenes when needed.
+**The chain of command**: You give one instruction in natural language → your local CC breaks it into actions → each action spawns a dedicated CC instance on the server → they coordinate through shared files → local CC monitors results and intervenes when needed.
 
 ### .md Files Are the Program
 
@@ -153,14 +146,32 @@ You: My server is user@gpu-box with an A100. Clone InfiEpisteme and set it up.
 CC:  [SSHs to server, clones, detects hardware] Done. What's your research direction?
 
 You: [describe your research idea in plain language]
-CC:  [searches literature, checks novelty, writes proposal, starts pipeline]
+CC:  [searches literature, checks novelty, writes proposal]
+
+     ── CHECKPOINT: P0 ──
+     Here's what I'm proposing. A few things to verify:
+     1. The hypothesis claims X — does that match the paper?
+     2. Scope: testing on LLaMA + Pythia at 0.5B. Enough for NeurIPS?
+     3. Budget: ~75 GPU-hours for 14 experiments. Feasible?
+
+You: Looks good, but add DenseFormer as a baseline.
+CC:  [updates proposal, continues to S1-S2]
+
+     ── CHECKPOINT: S2 ──
+     Experiment design ready. 8 nodes, 2 architectures. Check:
+     1. Each node tests one variable? ✓
+     2. Budget: 8 × 2.7h = ~22h for screening. Leaves 58h for tuning. ✓
+     3. Any missing baselines?
+
+You: Go.
+CC:  [runs S3-S8 fully automated, reports when done]
 ```
 
 ### Monitoring
 
 ```
 You: What's the status?
-CC:  S4.2 running. 4/6 experiments complete. Best accuracy: 87.2%.
+CC:  S4.2 running. 4/6 experiments complete. Best perplexity: 48.4.
 
 You: What are the risks for this stage?
 CC:  Paper is only 2 days old — Semantic Scholar won't have it. I'm using web search.
@@ -187,12 +198,23 @@ CC:  S1 failed: only 21 citations detected (need 30).
 
 ## Pipeline Stages
 
+```
+P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → S4 → S5 → S6 → S7 → S8
+ │                                │                  │                           │
+ direction                    experiment          fully automated            delivery
+ (human reviews)              design              (code, train,
+                              (human reviews)      analyze, write,
+                                                   review, package)
+```
+
 | Stage | What Happens | Output |
 |-------|-------------|--------|
 | **P0** | You + CC brainstorm direction, novelty check | `RESEARCH_PROPOSAL.md` |
+| | **[CHECKPOINT]** — human reviews direction, checks factual claims | |
 | **S0** | Hardware detection, init .ai/ knowledge base | `hardware_profile.json`, `.ai/` |
 | **S1** | Literature survey (30+ papers, multi-source) | `RELATED_WORK.md`, `BASELINES.md`, `bibliography.bib` |
 | **S2** | 6-perspective hypothesis debate, experiment design | `EXPERIMENT_PLAN.md`, `experiment_tree.json` |
+| | **[CHECKPOINT]** — human reviews design, verifies budget, checks baselines | |
 | **S3** | Implement methods + baselines | `src/`, `requirements.txt` |
 | **S4** | Progressive tree search (4 sub-stages, 6+ experiments) | `RESULTS_SUMMARY.md`, `results/` |
 | **S5** | Statistical analysis, 6-perspective interpretation | `ANALYSIS.md`, `tables/`, `figures/` |
@@ -200,14 +222,16 @@ CC:  S1 failed: only 21 citations detected (need 30).
 | **S7** | Cross-model adversarial review (Claude writes, GPT reviews) | `reviews/` |
 | **S8** | Package deliverables, venue-specific checklist | `DELIVERY/` |
 
+**9 stages, only 2 need human input.** The rest run fully automated.
+
 ## Safety & Quality
 
 | Mechanism | What It Does |
 |-----------|-------------|
-| **Human checkpoints** | Pipeline pauses after P0 and S2 for human review — fixed checklist + LLM adversarial brief targets known failure modes |
+| **Human checkpoints** | Pipeline pauses after P0 and S2 for human review — fixed checklist (targets known failure modes) + LLM adversarial brief + raw file access |
+| **3-Layer Judge** | Layer 1: deterministic checks. Layer 2: content quality. Layer 3: first-principles reasoning — challenges assumptions, catches factual errors, flags insufficient experimental design |
 | **Circuit breaker** | Same failure 3x → pauses for human input |
 | **State Guard** | Deterministic Python checks after every stage |
-| **3-Layer Judge** | Layer 1: deterministic checks. Layer 2: content quality. Layer 3: first-principles reasoning — challenges assumptions, catches factual errors, flags insufficient experimental design |
 | **Citation verification** | 5-step protocol — every citation verified in 2+ sources |
 | **Cross-model review** | External model (GPT) reviews the paper Claude wrote |
 | **Hardware detection** | Prevents experiments exceeding GPU/RAM capacity |
@@ -224,7 +248,7 @@ When working on cutting-edge topics, CC proactively watches for:
 | Not enough papers for 30-citation threshold | Supplements with adjacent literature |
 | Experiments exceed GPU budget | Adjusts batch size, reduces model scale, or stops early |
 | Citation format mismatch | Fixes validation regex, re-verifies |
-| API errors mid-pipeline | Retries, or resumes from last checkpoint |
+| API errors mid-pipeline | Retries with exponential backoff, or resumes from checkpoint |
 
 ## Setup
 
@@ -236,6 +260,13 @@ claude --version   # Claude Code must be installed
 ```
 
 **Local Machine**: Just have Claude Code installed. Then start a conversation.
+
+**Optional — unattended mode**:
+```bash
+./run.sh start     # runs pipeline, pauses at checkpoints
+./run.sh approve   # approve checkpoint and continue
+./run.sh status    # check progress
+```
 
 **Optional MCP servers** for enhanced paper search:
 ```bash
