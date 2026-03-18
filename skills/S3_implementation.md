@@ -195,6 +195,31 @@ For each root node, update:
 }
 ```
 
+### Step 10: Write Implementation Summary
+
+Append an **Implementation Summary** section to `README_code.md` with the following for each method:
+
+```markdown
+## Implementation Summary
+
+### {method_name}
+- **Source**: {paper citation | user-proposed | agent-proposed}
+- **Reference code**: {URL or "implemented from paper equations" or "novel, no reference"}
+- **Key design choices**:
+  - {decision 1}: {what was chosen} — {why}
+  - {decision 2}: {what was chosen} — {why}
+- **Deviations from paper/design**: {any differences and justification, or "none"}
+- **Parameters**: {count}M ({overhead}% over baseline)
+- **Peak memory**: {X} GB on {GPU type}
+```
+
+For **novel methods** (nodes with `design_spec` in experiment_tree.json), additionally:
+- List each `key_decision` from `design_spec` and what value was chosen
+- Verify each `invariant` from `design_spec` and report pass/fail
+- Note any `constraints` from `design_spec` and how they are satisfied in the code
+
+This summary is the primary artifact for user review before training starts.
+
 ## Output
 
 | File | Action |

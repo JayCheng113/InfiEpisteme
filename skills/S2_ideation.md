@@ -157,9 +157,25 @@ Root node structure:
   "status": "pending",
   "parent": null,
   "children": [],
-  "results": null
+  "results": null,
+  "design_spec": null
 }
 ```
+
+**For novel/proposed methods** (not reproducing a published paper), the `design_spec` field is REQUIRED:
+```json
+{
+  "design_spec": {
+    "origin": "user-proposed | agent-proposed",
+    "formulas": "mathematical definition of the method (LaTeX or plain text)",
+    "key_decisions": ["list of implementation decisions that are NOT specified by the formula and must be chosen"],
+    "constraints": ["design constraints, e.g. 'phase bias should be subtle, not dominant'"],
+    "reference_impl": "URL to reference implementation if any, or null",
+    "invariants": ["testable properties, e.g. 'reduces to baseline when scale=0'"]
+  }
+}
+```
+This ensures S3 has full context for implementation and the user can verify the design at the S2 checkpoint.
 
 Write the full experiment tree to `experiment_tree.json`:
 ```json

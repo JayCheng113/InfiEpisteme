@@ -101,10 +101,7 @@ Use first-principles thinking. Do not assume I always know exactly what I want o
 10. MCP-first: prefer MCP tools over Python scripts; scripts are fallbacks
 11. Git pre-registration: experiment design committed before execution (`research(protocol):`)
 12. Venue checklists: S8 verifies paper against venue-specific requirements
-13. Transparency before action: when about to dispatch work to the server (especially S3 implementation or S4 training), present what will be done in enough detail for the user to make an informed decision. The user should know what is being built and what choices are being made, not just that "something is starting." Concretely:
-    - When the user proposes a new method: restate your understanding, present the implementation plan (hyperparameters, architecture, edge cases), and get agreement before coding. Do not silently fill in unspecified details with defaults from other contexts.
-    - When advancing between stages: summarize what the next stage will do and what key decisions it will make, so the user can intervene if needed.
-    - When S3 completes: summarize what was implemented, what design choices were made, and what the user should verify before training starts.
+13. Transparency before action: the user must be able to see what is being built and what choices are being made — not just that "something is starting." Novel methods require `design_spec` in experiment_tree.json (see S2_ideation.md). S3 produces an Implementation Summary in README_code.md (see S3_implementation.md). Present these to the user at checkpoints and stage transitions.
 
 ## Quick Reference
 
