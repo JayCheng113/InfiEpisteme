@@ -38,6 +38,7 @@ nvidia-smi --query-compute-apps=pid,name,used_memory --format=csv,noheader
 3. Verify the config file exists.
 4. Verify the dataset is accessible.
 5. Estimate runtime and check against GPU budget.
+6. **Verify training invocation** (REQUIRED): Determine the correct command to launch training. If the training script uses package-relative imports (`from src.X import ...`), it MUST be run as `python -m src.train`, NOT `python3 src/train.py` (the latter causes `ModuleNotFoundError`). Test: `python -m {module} --config {config_path} --help` or a 0-step dry run. Do NOT assume `code_path` in experiment_tree.json is the executable entry point — it may reference the model implementation file, not the training script.
 
 ### Step 2: Write Experiment Code (if needed)
 
@@ -77,22 +78,30 @@ git commit -m "research(protocol): {node_id} — {approach_description}"
 
 ### Step 4: Submit GPU Job
 
+**Determine the correct training command first.** If the training script uses package imports, use `python -m` (e.g., `python -m src.train`). See Step 1.6.
+
 **Via SSH MCP** (if `config.yaml` has `mcp.ssh_remote: true`):
 - Use `mcp__ssh__execute_command` on the configured SSH host:
   ```
-  nohup python3 {code_path} --config {config_path} > results/{node_id}/logs/train.log 2>&1 &
+  cd /path/to/project && nohup python -m src.train --config {config_path} > results/{node_id}/logs/train.log 2>&1 &
   ```
 
 **Via Python scripts** (fallback):
 ```bash
 python3 scripts/gpu_submit.py \
   --node {node_id} \
-  --script {code_path} \
+  --script src/train.py \
   --config {config_path} \
   --gpu-type {gpu_type}
 ```
+(gpu_submit.py auto-converts `src/train.py` to `python -m src.train` for package imports.)
 
-Record the returned `job_id`.
+**Via direct execution** (simplest for local GPU):
+```bash
+nohup python -m src.train --config {config_path} --node_id {node_id} > results/{node_id}/train.log 2>&1 &
+```
+
+Record the returned `job_id` or PID.
 
 ### Step 5: Poll for Completion
 
@@ -128,7 +137,7 @@ On failure:
    - **Code bug**: runtime error — debug and fix
    - **Timeout**: experiment too slow — optimize or reduce scope
 3. Log to `.ai/evolution/negative-results.md`.
-4. If fixable: apply fix and re-submit (max 2 retries per node).
+4. If fixable: apply fix and re-submit (max 2 retries per node). **If a checkpoint exists** (`checkpoints/{node_id}/resume.pt`), use `--resume` to continue from the last eval checkpoint rather than restarting from scratch.
 5. If unfixable: mark node as `buggy` with detailed notes.
 
 ### Step 7: Generate Figures
@@ -204,6 +213,7 @@ Update the node in experiment_tree.json:
 
 - Fix all random seeds before execution for reproducibility.
 - Save checkpoints for experiments > 30 minutes.
+- **Checkpoint resume for long runs**: Experiments > 1 hour MUST use a training script that supports `--resume`. A single `resume.pt` (overwritten each eval) is sufficient — do not accumulate checkpoints that fill disk. `resume.pt` is automatically deleted after successful completion.
 - Never modify another node's results.
 - If a node takes > 2x estimated time, investigate before waiting longer.
 - Always validate results before marking as complete (no NaN, reasonable range).

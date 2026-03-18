@@ -69,6 +69,11 @@ Write your Step 0 analysis as a brief note at the top of `RESULTS_SUMMARY.md` be
 - If the plan specifies a fixed design, follow it
 - If budget is insufficient for the planned next sub-stage, propose a reduced scope and note the trade-off
 
+**State consistency check between sub-stages** (REQUIRED):
+- Verify `winner` fields in experiment_tree.json match the methods that ACTUALLY advance to the next sub-stage per EXPERIMENT_PLAN.md. If the plan was revised (e.g., methods dropped/replaced), winners may be stale. Fix before creating child nodes.
+- Verify `hardware_profile.json` → `recommendations.throughput_reference` reflects measured throughput from the COMPLETED sub-stage (not estimates from initial hardware detection). Stale throughput data causes wrong budget calculations.
+- Verify the training script's invocation command works: `python -m src.train --help` (or equivalent). If the script uses package imports, `python3 src/train.py` will fail with ImportError.
+
 ### Stage 4.1: Preliminary Investigation
 
 **Goal**: Run all root nodes with SHORT training to quickly validate which approaches work.

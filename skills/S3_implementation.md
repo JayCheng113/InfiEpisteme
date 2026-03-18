@@ -256,6 +256,24 @@ This summary is the primary artifact for user review before training starts.
 - If a node is buggy, document exactly what fails and why.
 - Do not run full experiments — that is S4's job. Only verify code runs.
 
+### Training Script Robustness (REQUIRED)
+
+These rules prevent silent failures when S4 launches training:
+
+1. **Invocation compatibility**: If the training script uses package-relative imports (`from src.utils.X import ...`), it MUST be invoked as `python -m src.train`, NOT `python3 src/train.py`. Document the correct invocation in README_code.md and in the script's docstring. Verify it works: `python -m {module} --help` must succeed.
+
+2. **CLI argument compatibility with `scripts/gpu_submit.py`**: The training script must accept at minimum `--config PATH`. It must NOT require arguments that gpu_submit.py does not pass (e.g., `--output-dir`). The results directory should be derived from `node_id` inside the config, not from a CLI argument.
+
+3. **Checkpoint resume for long runs**: If any experiment in `EXPERIMENT_PLAN.md` is estimated to run > 1 hour, the training script MUST support a `--resume` flag. Minimum implementation:
+   - Save a single `resume.pt` (overwritten each eval interval) containing: model state, optimizer state, step, tokens processed, best metric, training log.
+   - On `--resume`: load from `resume.pt`, continue training from the saved step.
+   - On successful completion: delete `resume.pt` to free disk.
+   - This prevents total loss of 10+ hour training runs due to crashes.
+
+4. **Verify end-to-end before marking runnable**: For each root node, run the EXACT command that S4 will use (including `python -m` module path, the actual config file, and a `--max_tokens` override for a short test). A node is NOT runnable if only `python3 src/script.py` was tested but S4 will use `python -m src.script`.
+
+5. **Update hardware_profile.json after verification**: After smoke-testing all methods, update `hardware_profile.json` → `recommendations.throughput_reference` with measured tok/s per method. Stale throughput estimates from initial hardware detection lead to wrong budget calculations in S4.
+
 ## When Done
 
 - All `src/` code is implemented and organized.

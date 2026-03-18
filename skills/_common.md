@@ -92,6 +92,11 @@ Outer-loop reflection commits: `research(reflect): {direction} — {reason}`
 - Use timestamps or checksums when possible to detect staleness.
 - **Never delete training logs, experiment results, or checkpoint files.** If you need to re-run, back up existing files with a timestamp first. Hours of GPU compute are not recoverable.
 
+### Script Interface Consistency
+- Before executing any Python script, verify it accepts the arguments you plan to pass. Run `{script} --help` first if unsure.
+- If a training script uses package-relative imports (`from src.X import ...`), it MUST be invoked as `python -m src.module`, NOT `python3 src/module.py`. The latter causes `ModuleNotFoundError`.
+- `scripts/gpu_submit.py` passes `--config`, `--node`, and optionally `--resume` to the training script. Do not assume it passes other arguments (e.g., `--output-dir`).
+
 ## Error Handling
 
 When something fails:
