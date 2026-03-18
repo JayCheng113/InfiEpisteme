@@ -43,6 +43,14 @@ Before writing any method from scratch, you MUST search for existing open-source
 
 This step prevents bugs from misunderstanding paper descriptions and saves time by building on verified code.
 
+### Coding Practices (REQUIRED)
+
+Read `skills/references/coding-practices.md` before starting implementation. Key rules:
+- **Build and verify incrementally**: write foundation → verify → write each method → verify → training loop → verify. Do NOT write everything then test at the end.
+- **Validate after every change**: each component gets a smoke test immediately after implementation.
+- **Regression check**: adding a new method must not break previously implemented methods.
+- **Definition of done**: a method is "runnable" only when it passes its smoke test (correct shapes, loss decreases, no errors on target hardware).
+
 ### Idempotency Check
 - Read `experiment_tree.json` and check node statuses.
 - If all root nodes have `status: "runnable"`: verify each actually runs, then skip.

@@ -368,6 +368,7 @@ Design informed by:
 - [Orchestra Research](https://github.com/orchestra-research/ai-research-skills) — citation verification, venue checklists
 - [LaTeX Document Skill](https://github.com/ndpvt-web/latex-document-skill) — LaTeX debugging patterns, long-form best practices
 - [Academic Writing Skills](https://github.com/bahayonghang/academic-writing-skills) — academic style guide, common writing errors
+- [Antigravity Awesome Skills](https://github.com/sickn33/antigravity-awesome-skills) — incremental build-verify, coding practices, TDD principles
 
 ## License
 
