@@ -238,6 +238,38 @@ P0 → [CHECKPOINT] → S0 → S1 → S2 → [CHECKPOINT] → S3 → S4 → S5 �
 | **Git pre-registration** | Experiment design committed before execution |
 | **Venue checklists** | NeurIPS/ICML/ICLR/ACL-specific checks before delivery |
 
+## 3-Layer Judge in Action
+
+Every stage passes through a judge before advancing. The judge doesn't just check boxes — it reasons from first principles.
+
+```
+S2 just completed. Judge evaluating...
+
+Layer 1 (deterministic):
+  ✓ EXPERIMENT_PLAN.md exists
+  ✓ experiment_tree.json has 8 nodes
+  ✓ Each node has id, approach, success_metric
+
+Layer 2 (content quality):
+  ✓ Hypotheses are genuinely different
+  ✓ Multi-perspective debate includes real criticism
+  ✗ Baseline list missing DenseFormer — important competitor
+
+Layer 3 (first-principles):
+  ✗ "All experiments use LLaMA only. A benchmark claim at NeurIPS
+     requires ≥2 architectures to demonstrate generalizability."
+  ✗ "H3 states 'AttnRes underperforms on dense models' as fact,
+     but evidence_basis is speculative. Reframe as question."
+  ⚠ "Budget: 16 nodes × 500M tokens = 43 GPU-hours for screening
+     alone. 200M tokens would suffice and leave room for ablations."
+
+Result: RETRY
+Guidance: "Add second architecture (e.g., Pythia). Reframe H3 as
+question. Reduce screening to 200M tokens."
+```
+
+Without Layer 3, this stage would have passed — the files exist, the counts are right. But the research design had fundamental problems that would have wasted 43 GPU-hours and produced a paper no reviewer would accept.
+
 ## Risk Prediction
 
 When working on cutting-edge topics, CC proactively watches for:
@@ -257,6 +289,12 @@ When working on cutting-edge topics, CC proactively watches for:
 git clone https://github.com/your-org/InfiEpisteme.git && cd InfiEpisteme
 pip install pyyaml requests
 claude --version   # Claude Code must be installed
+```
+
+**Cross-model review** (required for S7):
+```bash
+# Add OpenAI API key to server environment for GPT-based adversarial review
+echo 'export OPENAI_API_KEY="sk-..."' >> ~/.bashrc && source ~/.bashrc
 ```
 
 **Local Machine**: Just have Claude Code installed. Then start a conversation.
