@@ -119,6 +119,18 @@ Record this decision in `.ai/evolution/decisions.md` as ADR-002.
 
 For each selected hypothesis, create **N=3 root nodes** (6 total). Each root node is a different concrete instantiation of the hypothesis.
 
+**CRITICAL: One node = one training run.** Each node must correspond to exactly ONE model trained with ONE configuration. If a hypothesis requires comparing N methods, create N separate nodes — do NOT pack multiple training runs into a single node. Example:
+- WRONG: `H1_R1: "Compare PreNorm, AttnRes, DCA, MUDDFormer"` (4 training runs in 1 node)
+- RIGHT: `H1_R1: "PreNorm baseline"`, `H1_R2: "Block AttnRes"`, `H1_R3: "DCA"` (1 run each)
+
+**Budget estimation per node**: Before finalizing the tree, estimate GPU hours per node:
+- Read `hardware_profile.json` for throughput (tokens/sec)
+- Calculate: `gpu_hours = total_tokens / tokens_per_sec / 3600`
+- Sum all nodes. If total exceeds `config.yaml compute.gpu_hours`, reduce scope:
+  - Cut token count (S4.1 preliminary: 100-200M tokens is sufficient)
+  - Drop lowest-priority nodes
+  - Merge similar hypotheses
+
 Root node structure:
 ```json
 {
@@ -128,6 +140,7 @@ Root node structure:
   "approach": "description of this specific variant",
   "key_difference": "what makes this variant unique",
   "hyperparameters": {},
+  "estimated_gpu_hours": 0,
   "success_metric": "metric_name",
   "status": "pending",
   "parent": null,

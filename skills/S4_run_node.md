@@ -49,9 +49,18 @@ If the node is an ablation (Stage 4.4):
 2. Remove the specified component.
 3. Save and verify.
 
+### Step 2.5: Update Node Status to "running" (MANDATORY — before training)
+
+**IMMEDIATELY before starting any training**, update experiment_tree.json:
+- Set `node["status"] = "running"`
+- Set `node["start_time"] = "<ISO timestamp>"`
+- Write the updated tree to disk
+
+This is critical for tracking, resume, and budget. Do NOT leave status as "runnable" during training.
+
 ### Step 3: Git Pre-Registration
 
-Before submitting the job, commit the experiment design:
+Before submitting the job, commit the experiment design (including the status update):
 ```bash
 git add experiment_tree.json configs/{node_id}.yaml
 git commit -m "research(protocol): {node_id} — {approach_description}"

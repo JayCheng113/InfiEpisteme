@@ -31,15 +31,20 @@ Based on experiment type, load the relevant guide:
 - If partially complete, resume from the first incomplete node.
 - Check `results/{node_id}/metrics.json` existence for each node.
 
-### Budget Check
-Before ANY experiment submission:
-```python
-# Estimate GPU hours for this batch
-estimated_hours = num_nodes * estimated_hours_per_node
-remaining_budget = config.compute.gpu_hours - total_hours_used
-if estimated_hours > remaining_budget:
-    STOP and report: "Insufficient GPU budget. Need {estimated} hours, have {remaining}."
+### Budget Check (MANDATORY — do this BEFORE any training)
+Before ANY experiment submission, calculate actual GPU hours:
+
+1. Read `hardware_profile.json` → get GPU throughput (approximate: A100-40GB ≈ 50K tokens/s for 0.5B model with bf16)
+2. For each node, calculate: `hours = total_tokens / tokens_per_sec / 3600`
+3. Sum all planned nodes for this sub-stage
+4. Compare against remaining budget from `config.yaml compute.gpu_hours`
+
 ```
+Example: 6 nodes × 500M tokens each, 50K tokens/s
+= 6 × (500M / 50K / 3600) = 6 × 2.78 = 16.7 GPU-hours
+```
+
+**If total exceeds budget**: reduce tokens per node (S4.1: 100-200M is enough for preliminary validation), drop lower-priority nodes, or flag for human decision. Do NOT proceed and silently exceed budget.
 
 ## Your Role
 
@@ -49,7 +54,9 @@ You orchestrate the progressive tree search across 4 stages. You dispatch indivi
 
 ### Stage 4.1: Preliminary Investigation
 
-**Goal**: Run all root nodes, classify as buggy/non-buggy, select best per hypothesis.
+**Goal**: Run all root nodes with SHORT training to quickly validate which approaches work.
+
+**Token budget for S4.1**: Use 100-200M tokens per node (NOT the full training budget). This is a preliminary screening — you need enough signal to compare methods, not converged models. At 50K tokens/s, 200M tokens ≈ 1.1 hours per node. Full training happens in S4.2-S4.3 for winners only.
 
 1. **Collect runnable root nodes** from experiment_tree.json (status=runnable).
 2. **Git Pre-Registration** (before ANY experiment execution):
