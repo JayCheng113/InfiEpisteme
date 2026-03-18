@@ -1,6 +1,6 @@
 # Academic Writing Style Reference
 
-> Adapted from [academic-writing-skills](https://github.com/bahayonghang/academic-writing-skills) and [beamer-skill](https://github.com/Noi1r/beamer-skill).
+> Adapted from [academic-writing-skills](https://github.com/bahayonghang/academic-writing-skills).
 
 ## Word Choice
 
@@ -69,12 +69,3 @@
 | rise a question | raise a question |
 | solve problems | address/tackle problems |
 
-## Presentation Slides (Beamer)
-
-If the pipeline includes presentation generation:
-- **10pt font, 16:9 aspect ratio** for modern projectors
-- **Max 7 bullets per slide**, max 2 equations, max 5 new symbols
-- **No overlay commands** (`\pause`, `\onslide`) — use multiple slides
-- **Motivation before formalism** — worked example within 2 slides of each definition
-- **Telegraphic style** — speaker prompts, not manuscripts
-- Compile with XeLaTeX: `xelatex -interaction=nonstopmode slides.tex`
