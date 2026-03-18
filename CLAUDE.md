@@ -67,7 +67,7 @@ run.sh (主循环)
   ├── scripts/state_guard.py verify → 验证输出存在
   ├── claude -p "skills/memory_sync.md" → 记忆整合（.ai/ 更新）
   ├── scripts/state_guard.py verify → 验证记忆质量
-  ├── claude -p "skills/judge.md" → LLM-as-judge 质量门控
+  ├── claude -p "skills/judge.md" → 3 层审查（确定性检查 → 内容质量 → 第一性原理）
   └── scripts/state_guard.py advance → 推进/重试
 ```
 
@@ -84,7 +84,7 @@ run.sh (主循环)
 2. Commit knowledge updates separately: `docs(.ai): <summary>`
 3. Every failed experiment goes to `evolution/negative-results.md`
 4. Every figure must pass VLM review before paper inclusion
-5. Judge gate must pass before advancing to the next stage
+5. Judge gate (3-layer: deterministic → content quality → first-principles) must pass before advancing
 6. Anti-hallucination: every citation verified via 5-step protocol (see `skills/references/citation-verification.md`)
 7. State Guardian (`scripts/state_guard.py`) validates state after every skill execution
 8. Cross-model adversarial review in S7 (Claude writes, external model reviews)

@@ -206,7 +206,7 @@ CC:  S1 failed: only 21 citations detected (need 30).
 |-----------|-------------|
 | **Circuit breaker** | Same failure 3x → pauses for human input |
 | **State Guard** | Deterministic Python checks after every stage |
-| **LLM Judge** | Adversarial quality assessment before advancing |
+| **3-Layer Judge** | Layer 1: deterministic checks. Layer 2: content quality. Layer 3: first-principles reasoning — challenges assumptions, catches factual errors, flags insufficient experimental design |
 | **Citation verification** | 5-step protocol — every citation verified in 2+ sources |
 | **Cross-model review** | External model (GPT) reviews the paper Claude wrote |
 | **Hardware detection** | Prevents experiments exceeding GPU/RAM capacity |

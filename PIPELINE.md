@@ -31,7 +31,9 @@ expected_ai_updates:
 registry_fields: {}
 ```
 
-**Judge criteria**: RESEARCH_PROPOSAL.md exists with all required fields (research_question, hypothesis, proposed_method, baselines, success_metric)
+**Judge criteria**:
+- Layer 1: RESEARCH_PROPOSAL.md exists with all required fields (research_question, hypothesis, proposed_method, baselines, success_metric)
+- Layer 3: Are key claims factually grounded? Is the novelty claim real? Is the hypothesis a testable question (not a disguised assertion)?
 
 ---
 
@@ -71,10 +73,9 @@ registry_fields:
 ```
 
 **Judge criteria**:
-- ≥20 papers reviewed with proper citations
-- ≥3 baselines identified with reported numbers
-- Research gap clearly stated connecting to research question
-- All citations traceable to real papers (anti-hallucination)
+- Layer 1: ≥20 papers reviewed with proper citations; ≥3 baselines identified with reported numbers
+- Layer 2: Research gap clearly stated connecting to research question; all citations traceable to real papers
+- Layer 3: Are we characterizing prior work fairly? Are there obvious related works missing? Is the gap real or manufactured?
 
 ---
 
@@ -96,10 +97,9 @@ registry_fields:
 ```
 
 **Judge criteria**:
-- ≥2 hypotheses selected with feasibility/novelty/impact scores
-- Experiment tree has ≥6 root nodes (N=3 per hypothesis)
-- Each node has clear success metric and approach description
-- Multi-perspective critique completed (6 viewpoints)
+- Layer 1: ≥2 hypotheses selected; experiment tree has ≥6 root nodes; each node has success metric
+- Layer 2: Multi-perspective critique completed (6 viewpoints); hypotheses genuinely different
+- Layer 3: Are hypotheses testable questions or disguised assertions? Does each node test exactly one thing? Is total compute budget feasible? Would one architecture suffice for the claimed conclusion?
 
 ---
 
@@ -143,10 +143,9 @@ registry_fields:
 ```
 
 **Judge criteria**:
-- Stage 4.4 (ablation studies) complete
-- ≥1 method outperforms all baselines on primary metric
-- All figures VLM-approved (score ≥ 4/5)
-- Negative results documented in .ai/evolution/negative-results.md
+- Layer 1: Stage 4.4 complete; ≥1 method outperforms baselines; figures VLM-approved
+- Layer 2: Negative results documented; comparisons fair (same data/protocol)
+- Layer 3: Is the experimental protocol actually measuring what we claim? Are there confounding variables? Are results too good to be true?
 
 **Safety**: Experiments >4 GPU-hours require explicit budget check. Circuit breaker on consecutive failures.
 
