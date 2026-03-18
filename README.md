@@ -1,5 +1,7 @@
 # InfiEpisteme
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > **Talk to Claude Code. Get a research paper.**
 
 InfiEpisteme is an automated research pipeline that turns a research idea into a peer-review-quality paper, clean code, and organized results — all through natural language conversation with Claude Code.
